@@ -66,9 +66,12 @@ If you wish to deploy this to Kubernetes, this repository contains a Helm Chart.
 ```shell
 helm upgrade --install \
 --create-namespace \
-./helm \
-alertmanager-discord-helmrelease
+--namespace alertmanager-discord
+alertmanager-discord \
+./deploy/helm
 ```
+
+You can optionally also provide a values yaml file, `--values ./your-values.yaml`, to override the default values.
 
 ## Acknowledgements
 
