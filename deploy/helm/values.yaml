@@ -54,3 +54,7 @@ server:
   discordWebhookSecret:
     name: discord-webhook # name of the Kubernetes Secret containing the Discord webhook url. Must be in the same namespace as this helm chart is deployed.
     key: "discord-uri" # key within the Opaque Kubernetes Secret
+
+ciliumNetworkPolicy:
+  enabled: false
+  alertManagerSelectorLabels: {} # the labels applied to the alertmanager which will send data to this service. If Cilium Network Policy is enabled, ingress to this service is only allowed from a pod matching these labels.
