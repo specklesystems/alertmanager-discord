@@ -137,7 +137,12 @@ func sendWebhook(amo *alertManOut) {
 
 		DO.Embeds = []discordEmbed{RichEmbed}
 
-		DOD, _ := json.Marshal(DO)
+		DOD, err := json.Marshal(DO)
+		if err != nil {
+			log.Printf("Error encountered when marshalling object to json. We will not continue posting to Discord. Discord Out object: '%v+'", DO)
+			return
+		}
+
 		http.Post(*whURL, "application/json", bytes.NewReader(DOD))
 	}
 }
@@ -165,7 +170,12 @@ func sendRawPromAlertWarn() {
 		},
 	}
 
-	DOD, _ := json.Marshal(DO)
+	DOD, err := json.Marshal(DO)
+	if err != nil {
+		log.Printf("Error encountered when marshalling object to json. We will not continue posting to Discord. Discord Out object: '%v+'", DO)
+		return
+	}
+
 	http.Post(*whURL, "application/json", bytes.NewReader(DOD))
 }
 
@@ -212,7 +222,6 @@ func main() {
 
 				if len(b) > 1024 {
 					log.Printf("Failed to unpack inbound alert request - %s...", string(b[:1023]))
-
 				} else {
 					log.Printf("Failed to unpack inbound alert request - %s", string(b))
 				}
