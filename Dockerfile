@@ -8,12 +8,10 @@ RUN apk update && apk add --no-cache \
   ca-certificates=20220614-r0
 # Create appuser
 RUN adduser -D -g '' appuser
-COPY . $GOPATH/src/mypackage/myapp/
-WORKDIR $GOPATH/src/mypackage/myapp/
+COPY . $GOPATH/src/alertmanager-discord/
+WORKDIR $GOPATH/src/alertmanager-discord/
 #get dependancies
-RUN go get -d -v \
-    # build the binary
-    && CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -ldflags="-w -s" -o /go/bin/alertmanager-discord
+RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -ldflags="-w -s" -o /go/bin/alertmanager-discord ./cmd/alertforward
 
 
 # STEP 2 build a small image

@@ -1,4 +1,4 @@
-package main
+package alertforwarder
 
 import "encoding/json"
 

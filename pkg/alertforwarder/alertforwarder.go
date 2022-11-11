@@ -1,18 +1,15 @@
-package main
+package alertforwarder
 
 import (
 	"bytes"
 	"encoding/json"
-	"flag"
 	"fmt"
 	"io"
 	"log"
 	"net/http"
 	"net/url"
-	"os"
 	"regexp"
 	"strings"
-	"time"
 )
 
 // Discord color values
@@ -26,14 +23,6 @@ const (
 	StatusFiring   = "firing"
 	StatusResolved = "resolved"
 )
-
-const (
-	FaviconPath   = "/favicon.ico"
-	LivenessPath  = "/liveness"
-	ReadinessPath = "/readiness"
-)
-
-const defaultListenAddress = "127.0.0.1:9094"
 
 type alertManAlert struct {
 	Annotations struct {
@@ -84,22 +73,21 @@ type discordEmbedField struct {
 
 type AlertForwarder struct {
 	client httpClient;
+	whURL string;
 }
 
 type httpClient interface {
 	Post(url, contentType string, body io.Reader) (resp *http.Response, err error)
 }
 
-func NewAlertForwarder(client httpClient) AlertForwarder {
-	return AlertForwarder{client: client}
+func NewAlertForwarder(client httpClient, whURL string) AlertForwarder {
+	return AlertForwarder{
+		client: client,
+		whURL:  whURL,
+	}
 }
 
-var (
-	whURL         = flag.String("webhook.url", os.Getenv("DISCORD_WEBHOOK"), "Discord WebHook URL.")
-	listenAddress = flag.String("listen.address", os.Getenv("LISTEN_ADDRESS"), "Address:Port to listen on.")
-)
-
-func checkWhURL(whURL string) {
+func CheckWhURL(whURL string) {
 	if whURL == "" {
 		log.Fatalf("Environment variable 'DISCORD_WEBHOOK' or CLI parameter 'webhook.url' not found.")
 	}
@@ -162,9 +150,9 @@ func (af *AlertForwarder) sendWebhook(amo *alertManOut) {
 			return
 		}
 
-		_, err = af.client.Post(*whURL, "application/json", bytes.NewReader(DOD))
+		_, err = af.client.Post(af.whURL, "application/json", bytes.NewReader(DOD))
 		if err != nil {
-			log.Printf("Error encountered undertaking POST to '%s'.", *whURL)
+			log.Printf("Error encountered undertaking POST to '%s'.", af.whURL)
 		}
 	}
 }
@@ -198,10 +186,10 @@ func (af *AlertForwarder) sendRawPromAlertWarn() {
 		return
 	}
 
-	http.Post(*whURL, "application/json", bytes.NewReader(DOD))
+	http.Post(af.whURL, "application/json", bytes.NewReader(DOD))
 }
 
-func  (af *AlertForwarder) transformAndForward(w http.ResponseWriter, r *http.Request) {
+func  (af *AlertForwarder) TransformAndForward(w http.ResponseWriter, r *http.Request) {
 	log.Printf("%s - [%s] %s", r.Host, r.Method, r.URL.Path)
 
 	b, err := io.ReadAll(r.Body)
@@ -227,34 +215,4 @@ func  (af *AlertForwarder) transformAndForward(w http.ResponseWriter, r *http.Re
 	}
 
 	af.sendWebhook(&amo)
-}
-
-func main() {
-	flag.Parse()
-	checkWhURL(*whURL)
-
-	if *listenAddress == "" {
-		*listenAddress = defaultListenAddress
-	}
-
-	client := &http.Client{
-			Timeout: 5 * time.Second,
-	}
-	af := NewAlertForwarder(client)
-
-	http.HandleFunc("/", af.transformAndForward)
-	http.HandleFunc(ReadinessPath, func(w http.ResponseWriter, r *http.Request) {
-		log.Print("Readiness probe encountered.")
-	})
-	http.HandleFunc(LivenessPath, func(w http.ResponseWriter, r *http.Request) {
-		log.Print("Liveness probe encountered.")
-	})
-	http.HandleFunc(FaviconPath, func(w http.ResponseWriter, r *http.Request) {
-		// purposefully empty
-	})
-
-	log.Printf("Listening on: %s", *listenAddress)
-
-	log.Fatalf("Failed to listen on HTTP: %v",
-		http.ListenAndServe(*listenAddress, nil))
 }
