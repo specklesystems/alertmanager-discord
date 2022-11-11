@@ -32,17 +32,17 @@ func main() {
 	}
 
 	client := &http.Client{
-			Timeout: 5 * time.Second,
+		Timeout: 5 * time.Second,
 	}
 	af := alertforwarder.NewAlertForwarder(client, *whURL)
 
 	http.HandleFunc("/", af.TransformAndForward)
 
-	http.HandleFunc( "/readiness", func(w http.ResponseWriter, r *http.Request) {
+	http.HandleFunc("/readiness", func(w http.ResponseWriter, r *http.Request) {
 		log.Print("Readiness probe encountered.")
 	})
 
-	http.HandleFunc( "/liveness", func(w http.ResponseWriter, r *http.Request) {
+	http.HandleFunc("/liveness", func(w http.ResponseWriter, r *http.Request) {
 		log.Print("Liveness probe encountered.")
 	})
 

@@ -10,70 +10,14 @@ import (
 	"net/url"
 	"regexp"
 	"strings"
+
+	"github.com/benjojo/alertmanager-discord/pkg/alertmanager"
+	"github.com/benjojo/alertmanager-discord/pkg/discord"
 )
-
-// Discord color values
-const (
-	ColorRed   = 0x992D22
-	ColorGreen = 0x2ECC71
-	ColorGrey  = 0x95A5A6
-)
-
-const (
-	StatusFiring   = "firing"
-	StatusResolved = "resolved"
-)
-
-type alertManAlert struct {
-	Annotations struct {
-		Description string `json:"description"`
-		Summary     string `json:"summary"`
-	} `json:"annotations"`
-	EndsAt       string            `json:"endsAt"`
-	GeneratorURL string            `json:"generatorURL"`
-	Labels       map[string]string `json:"labels"`
-	StartsAt     string            `json:"startsAt"`
-	Status       string            `json:"status"`
-}
-
-type alertManOut struct {
-	Alerts            []alertManAlert `json:"alerts"`
-	CommonAnnotations struct {
-		Summary string `json:"summary"`
-	} `json:"commonAnnotations"`
-	CommonLabels struct {
-		Alertname string `json:"alertname"`
-	} `json:"commonLabels"`
-	ExternalURL string `json:"externalURL"`
-	GroupKey    string `json:"groupKey"`
-	GroupLabels struct {
-		Alertname string `json:"alertname"`
-	} `json:"groupLabels"`
-	Receiver string `json:"receiver"`
-	Status   string `json:"status"`
-	Version  string `json:"version"`
-}
-
-type discordOut struct {
-	Content string         `json:"content"`
-	Embeds  []discordEmbed `json:"embeds"`
-}
-
-type discordEmbed struct {
-	Title       string              `json:"title"`
-	Description string              `json:"description"`
-	Color       int                 `json:"color"`
-	Fields      []discordEmbedField `json:"fields"`
-}
-
-type discordEmbedField struct {
-	Name  string `json:"name"`
-	Value string `json:"value"`
-}
 
 type AlertForwarder struct {
-	client httpClient;
-	whURL string;
+	client httpClient
+	whURL  string
 }
 
 type httpClient interface {
@@ -102,28 +46,28 @@ func CheckWhURL(whURL string) {
 	}
 }
 
-func (af *AlertForwarder) sendWebhook(amo *alertManOut) {
-	groupedAlerts := make(map[string][]alertManAlert)
+func (af *AlertForwarder) sendWebhook(amo *alertmanager.Out) {
+	groupedAlerts := make(map[string][]alertmanager.Alert)
 
 	for _, alert := range amo.Alerts {
 		groupedAlerts[alert.Status] = append(groupedAlerts[alert.Status], alert)
 	}
 
 	for status, alerts := range groupedAlerts {
-		DO := discordOut{}
+		DO := discord.Out{}
 
-		RichEmbed := discordEmbed{
+		RichEmbed := discord.Embed{
 			Title:       fmt.Sprintf("[%s:%d] %s", strings.ToUpper(status), len(alerts), amo.CommonLabels.Alertname),
 			Description: amo.CommonAnnotations.Summary,
-			Color:       ColorGrey,
-			Fields:      []discordEmbedField{},
+			Color:       discord.ColorGrey,
+			Fields:      []discord.EmbedField{},
 		}
 
 		switch status {
-		case StatusFiring:
-			RichEmbed.Color = ColorRed
-		case StatusResolved:
-			RichEmbed.Color = ColorGreen
+		case alertmanager.StatusFiring:
+			RichEmbed.Color = discord.ColorRed
+		case alertmanager.StatusResolved:
+			RichEmbed.Color = discord.ColorGreen
 		}
 
 		if amo.CommonAnnotations.Summary != "" {
@@ -136,13 +80,13 @@ func (af *AlertForwarder) sendWebhook(amo *alertManOut) {
 				realname = alert.Labels["exported_instance"]
 			}
 
-			RichEmbed.Fields = append(RichEmbed.Fields, discordEmbedField{
+			RichEmbed.Fields = append(RichEmbed.Fields, discord.EmbedField{
 				Name:  fmt.Sprintf("[%s]: %s on %s", strings.ToUpper(status), alert.Labels["alertname"], realname),
 				Value: alert.Annotations.Description,
 			})
 		}
 
-		DO.Embeds = []discordEmbed{RichEmbed}
+		DO.Embeds = []discord.Embed{RichEmbed}
 
 		DOD, err := json.Marshal(DO)
 		if err != nil {
@@ -168,14 +112,14 @@ func (af *AlertForwarder) sendRawPromAlertWarn() {
 	log.Print(`--- --                                      -- ---`)
 	log.Print(badString)
 
-	DO := discordOut{
+	DO := discord.Out{
 		Content: "",
-		Embeds: []discordEmbed{
+		Embeds: []discord.Embed{
 			{
 				Title:       "You have misconfigured this software",
 				Description: badString,
-				Color:       ColorGrey,
-				Fields:      []discordEmbedField{},
+				Color:       discord.ColorGrey,
+				Fields:      []discord.EmbedField{},
 			},
 		},
 	}
@@ -189,7 +133,7 @@ func (af *AlertForwarder) sendRawPromAlertWarn() {
 	http.Post(af.whURL, "application/json", bytes.NewReader(DOD))
 }
 
-func  (af *AlertForwarder) TransformAndForward(w http.ResponseWriter, r *http.Request) {
+func (af *AlertForwarder) TransformAndForward(w http.ResponseWriter, r *http.Request) {
 	log.Printf("%s - [%s] %s", r.Host, r.Method, r.URL.Path)
 
 	b, err := io.ReadAll(r.Body)
@@ -197,7 +141,7 @@ func  (af *AlertForwarder) TransformAndForward(w http.ResponseWriter, r *http.Re
 		panic(err)
 	}
 
-	amo := alertManOut{}
+	amo := alertmanager.Out{}
 	err = json.Unmarshal(b, &amo)
 	if err != nil {
 		if isRawPromAlert(b) {
