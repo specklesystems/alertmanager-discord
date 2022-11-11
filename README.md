@@ -73,6 +73,27 @@ alertmanager-discord \
 
 You can optionally also provide a values yaml file, `--values ./your-values.yaml`, to override the default values.
 
+
+## Development
+
+To build the binary locally:
+
+```shell
+CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -ldflags="-w -s" -o /tmp/alertmanager-discord
+```
+
+To build the Dockerfile locally:
+
+```shell
+docker build . -t speckle/alertmanager-discord:local
+```
+
+Or to build the Dockerfile on Apple Silicon (M1, M2 etc.):
+
+```shell
+docker buildx build --platform=linux/amd64 . -t speckle/alertmanager-discord:local
+```
+
 ## Acknowledgements
 
 This repository is forked from https://github.com/benjojo/alertmanager-discord under the Apache 2.0 license
