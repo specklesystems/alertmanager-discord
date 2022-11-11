@@ -21,6 +21,11 @@ const (
 	ColorGrey  = 0x95A5A6
 )
 
+const (
+	StatusFiring = "firing"
+	StatusResolved = "resolved"
+)
+
 type alertManAlert struct {
 	Annotations struct {
 		Description string `json:"description"`
@@ -107,9 +112,10 @@ func sendWebhook(amo *alertManOut) {
 			Fields:      []discordEmbedField{},
 		}
 
-		if status == "firing" {
+		switch status {
+		case StatusFiring:
 			RichEmbed.Color = ColorRed
-		} else if status == "resolved" {
+		case StatusResolved:
 			RichEmbed.Color = ColorGreen
 		}
 
