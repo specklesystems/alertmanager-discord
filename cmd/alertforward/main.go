@@ -25,7 +25,7 @@ const (
 
 func main() {
 	flag.Parse()
-	alertforwarder.CheckWhURL(*whURL)
+	alertforwarder.CheckWebhookURL(*whURL)
 
 	if *listenAddress == "" {
 		*listenAddress = defaultListenAddress

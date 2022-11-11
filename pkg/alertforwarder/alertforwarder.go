@@ -16,22 +16,22 @@ import (
 )
 
 type AlertForwarder struct {
-	client httpClient
-	whURL  string
+	client     httpClient
+	webhookURL string
 }
 
 type httpClient interface {
 	Post(url, contentType string, body io.Reader) (resp *http.Response, err error)
 }
 
-func NewAlertForwarder(client httpClient, whURL string) AlertForwarder {
+func NewAlertForwarder(client httpClient, webhookURL string) AlertForwarder {
 	return AlertForwarder{
-		client: client,
-		whURL:  whURL,
+		client:     client,
+		webhookURL: webhookURL,
 	}
 }
 
-func CheckWhURL(whURL string) {
+func CheckWebhookURL(whURL string) {
 	if whURL == "" {
 		log.Fatalf("Environment variable 'DISCORD_WEBHOOK' or CLI parameter 'webhook.url' not found.")
 	}
@@ -94,9 +94,9 @@ func (af *AlertForwarder) sendWebhook(amo *alertmanager.Out) {
 			return
 		}
 
-		_, err = af.client.Post(af.whURL, "application/json", bytes.NewReader(DOD))
+		_, err = af.client.Post(af.webhookURL, "application/json", bytes.NewReader(DOD))
 		if err != nil {
-			log.Printf("Error encountered undertaking POST to '%s'.", af.whURL)
+			log.Printf("Error encountered undertaking POST to '%s'.", af.webhookURL)
 		}
 	}
 }
@@ -126,11 +126,11 @@ func (af *AlertForwarder) sendRawPromAlertWarn() {
 
 	DOD, err := json.Marshal(DO)
 	if err != nil {
-		log.Printf("Error encountered when marshalling object to json. We will not continue posting to Discord. Discord Out object: '%v+'", DO)
+		log.Printf("Error encountered when marshalling object to json. We will not continue. Discord Out object: '%v+'", DO)
 		return
 	}
 
-	http.Post(af.whURL, "application/json", bytes.NewReader(DOD))
+	http.Post(af.webhookURL, "application/json", bytes.NewReader(DOD))
 }
 
 func (af *AlertForwarder) TransformAndForward(w http.ResponseWriter, r *http.Request) {
