@@ -78,7 +78,7 @@ You can optionally also provide a values yaml file, `--values ./your-values.yaml
 To build the binary locally:
 
 ```shell
-CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -ldflags="-w -s" -o /tmp/alertmanager-discord
+CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -ldflags="-w -s" -o /tmp/alertmanager-discord ./cmd/alertforward
 ```
 
 To build the Dockerfile locally:
