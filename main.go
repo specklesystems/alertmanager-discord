@@ -12,6 +12,7 @@ import (
 	"os"
 	"regexp"
 	"strings"
+	"time"
 )
 
 // Discord color values
@@ -24,6 +25,12 @@ const (
 const (
 	StatusFiring   = "firing"
 	StatusResolved = "resolved"
+)
+
+const (
+	FaviconPath   = "/favicon.ico"
+	LivenessPath  = "/liveness"
+	ReadinessPath = "/readiness"
 )
 
 const defaultListenAddress = "127.0.0.1:9094"
@@ -75,6 +82,18 @@ type discordEmbedField struct {
 	Value string `json:"value"`
 }
 
+type AlertForwarder struct {
+	client httpClient;
+}
+
+type httpClient interface {
+	Post(url, contentType string, body io.Reader) (resp *http.Response, err error)
+}
+
+func NewAlertForwarder(client httpClient) AlertForwarder {
+	return AlertForwarder{client: client}
+}
+
 var (
 	whURL         = flag.String("webhook.url", os.Getenv("DISCORD_WEBHOOK"), "Discord WebHook URL.")
 	listenAddress = flag.String("listen.address", os.Getenv("LISTEN_ADDRESS"), "Address:Port to listen on.")
@@ -95,7 +114,7 @@ func checkWhURL(whURL string) {
 	}
 }
 
-func sendWebhook(amo *alertManOut) {
+func (af *AlertForwarder) sendWebhook(amo *alertManOut) {
 	groupedAlerts := make(map[string][]alertManAlert)
 
 	for _, alert := range amo.Alerts {
@@ -143,11 +162,14 @@ func sendWebhook(amo *alertManOut) {
 			return
 		}
 
-		http.Post(*whURL, "application/json", bytes.NewReader(DOD))
+		_, err = af.client.Post(*whURL, "application/json", bytes.NewReader(DOD))
+		if err != nil {
+			log.Printf("Error encountered undertaking POST to '%s'.", *whURL)
+		}
 	}
 }
 
-func sendRawPromAlertWarn() {
+func (af *AlertForwarder) sendRawPromAlertWarn() {
 	badString := `This program is suppose to be fed by alertmanager.` + "\n" +
 		`It is not a replacement for alertmanager, it is a ` + "\n" +
 		`webhook target for it. Please read the README.md  ` + "\n" +
@@ -179,6 +201,34 @@ func sendRawPromAlertWarn() {
 	http.Post(*whURL, "application/json", bytes.NewReader(DOD))
 }
 
+func  (af *AlertForwarder) transformAndForward(w http.ResponseWriter, r *http.Request) {
+	log.Printf("%s - [%s] %s", r.Host, r.Method, r.URL.Path)
+
+	b, err := io.ReadAll(r.Body)
+	if err != nil {
+		panic(err)
+	}
+
+	amo := alertManOut{}
+	err = json.Unmarshal(b, &amo)
+	if err != nil {
+		if isRawPromAlert(b) {
+			af.sendRawPromAlertWarn()
+			return
+		}
+
+		if len(b) > 1024 {
+			log.Printf("Failed to unpack inbound alert request - %s...", string(b[:1023]))
+		} else {
+			log.Printf("Failed to unpack inbound alert request - %s", string(b))
+		}
+
+		return
+	}
+
+	af.sendWebhook(&amo)
+}
+
 func main() {
 	flag.Parse()
 	checkWhURL(*whURL)
@@ -187,48 +237,24 @@ func main() {
 		*listenAddress = defaultListenAddress
 	}
 
+	client := &http.Client{
+			Timeout: 5 * time.Second,
+	}
+	af := NewAlertForwarder(client)
+
+	http.HandleFunc("/", af.transformAndForward)
+	http.HandleFunc(ReadinessPath, func(w http.ResponseWriter, r *http.Request) {
+		log.Print("Readiness probe encountered.")
+	})
+	http.HandleFunc(LivenessPath, func(w http.ResponseWriter, r *http.Request) {
+		log.Print("Liveness probe encountered.")
+	})
+	http.HandleFunc(FaviconPath, func(w http.ResponseWriter, r *http.Request) {
+		// purposefully empty
+	})
+
 	log.Printf("Listening on: %s", *listenAddress)
+
 	log.Fatalf("Failed to listen on HTTP: %v",
-		http.ListenAndServe(*listenAddress, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			log.Printf("%s - [%s] %s", r.Host, r.Method, r.URL.RawPath)
-
-			if r.URL.Path == "/readiness" {
-				log.Print("Readiness probe encountered.")
-				return
-			}
-
-			if r.URL.Path == "/liveness" {
-				log.Print("Liveness probe encountered.")
-				return
-			}
-
-			if r.URL.Path == "/favicon.ico" {
-				log.Print("Favicon request encountered.")
-				return
-			}
-
-			b, err := io.ReadAll(r.Body)
-			if err != nil {
-				panic(err)
-			}
-
-			amo := alertManOut{}
-			err = json.Unmarshal(b, &amo)
-			if err != nil {
-				if isRawPromAlert(b) {
-					sendRawPromAlertWarn()
-					return
-				}
-
-				if len(b) > 1024 {
-					log.Printf("Failed to unpack inbound alert request - %s...", string(b[:1023]))
-				} else {
-					log.Printf("Failed to unpack inbound alert request - %s", string(b))
-				}
-
-				return
-			}
-
-			sendWebhook(&amo)
-		})))
+		http.ListenAndServe(*listenAddress, nil))
 }
