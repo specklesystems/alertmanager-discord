@@ -73,7 +73,6 @@ alertmanager-discord \
 
 You can optionally also provide a values yaml file, `--values ./your-values.yaml`, to override the default values.
 
-
 ## Development
 
 To build the binary locally:

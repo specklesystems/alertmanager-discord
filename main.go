@@ -22,9 +22,11 @@ const (
 )
 
 const (
-	StatusFiring = "firing"
+	StatusFiring   = "firing"
 	StatusResolved = "resolved"
 )
+
+const defaultListenAddress = "127.0.0.1:9094"
 
 type alertManAlert struct {
 	Annotations struct {
@@ -72,8 +74,6 @@ type discordEmbedField struct {
 	Name  string `json:"name"`
 	Value string `json:"value"`
 }
-
-const defaultListenAddress = "127.0.0.1:9094"
 
 var (
 	whURL         = flag.String("webhook.url", os.Getenv("DISCORD_WEBHOOK"), "Discord WebHook URL.")
