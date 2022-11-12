@@ -8,7 +8,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/benjojo/alertmanager-discord/pkg/discord"
+	"github.com/specklesystems/alertmanager-discord/pkg/discord"
 )
 
 func Test_TransformAndForward_HappyPath(t *testing.T) {

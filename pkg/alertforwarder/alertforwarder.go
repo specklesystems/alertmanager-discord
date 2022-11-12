@@ -11,9 +11,9 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/benjojo/alertmanager-discord/pkg/alertmanager"
-	"github.com/benjojo/alertmanager-discord/pkg/discord"
-	"github.com/benjojo/alertmanager-discord/pkg/prometheus"
+	"github.com/specklesystems/alertmanager-discord/pkg/alertmanager"
+	"github.com/specklesystems/alertmanager-discord/pkg/discord"
+	"github.com/specklesystems/alertmanager-discord/pkg/prometheus"
 )
 
 type AlertForwarder struct {

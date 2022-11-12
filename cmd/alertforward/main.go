@@ -7,7 +7,7 @@ import (
 	"os"
 	"time"
 
-	"github.com/benjojo/alertmanager-discord/pkg/alertforwarder"
+	"github.com/specklesystems/alertmanager-discord/pkg/alertforwarder"
 )
 
 const defaultListenAddress = "127.0.0.1:9094"
