@@ -1,7 +1,6 @@
 package alertforwarder
 
 import (
-	"bytes"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -15,18 +14,12 @@ import (
 )
 
 type AlertForwarder struct {
-	client     httpClient
-	webhookURL string
+	client *discord.Client
 }
 
-type httpClient interface {
-	Post(url, contentType string, body io.Reader) (resp *http.Response, err error)
-}
-
-func NewAlertForwarder(client httpClient, webhookURL string) AlertForwarder {
+func NewAlertForwarder(client discord.HttpClient, webhookURL string) AlertForwarder {
 	return AlertForwarder{
-		client:     client,
-		webhookURL: webhookURL,
+		client: discord.NewClient(client, webhookURL),
 	}
 }
 
@@ -78,21 +71,14 @@ func (af *AlertForwarder) sendWebhook(amo *alertmanager.Out, w http.ResponseWrit
 
 		DO.Embeds = []discord.Embed{RichEmbed}
 
-		DOD, err := json.Marshal(DO)
+		res, err := af.client.PublishMessage(DO)
 		if err != nil {
-			log.Printf("Error encountered when marshalling object to json. We will not continue posting to Discord. Discord Out object: '%v+'", DO)
+			err = fmt.Errorf("Error encountered when publishing message to discord: %w", err)
+			log.Printf("%s", err)
 			w.WriteHeader(http.StatusInternalServerError)
 			return
 		}
 
-		res, err := af.client.Post(af.webhookURL, "application/json", bytes.NewReader(DOD))
-		if res != nil && res.Body != nil {
-			defer res.Body.Close()
-		}
-		if err != nil {
-			log.Printf("Error encountered sending POST to '%s'.", af.webhookURL)
-			w.WriteHeader(http.StatusInternalServerError)
-		}
 		if res.StatusCode < 200 || res.StatusCode > 399 {
 			w.WriteHeader(http.StatusInternalServerError)
 			if res.Body != nil {
@@ -104,7 +90,7 @@ func (af *AlertForwarder) sendWebhook(amo *alertmanager.Out, w http.ResponseWrit
 	}
 }
 
-func (af *AlertForwarder) sendRawPromAlertWarn() error {
+func (af *AlertForwarder) sendRawPromAlertWarn() (*http.Response, error) {
 	badString := `This program is suppose to be fed by alertmanager.` + "\n" +
 		`It is not a replacement for alertmanager, it is a ` + "\n" +
 		`webhook target for it. Please read the README.md  ` + "\n" +
@@ -127,17 +113,12 @@ func (af *AlertForwarder) sendRawPromAlertWarn() error {
 		},
 	}
 
-	DOD, err := json.Marshal(DO)
+	res, err := af.client.PublishMessage(DO)
 	if err != nil {
-		return fmt.Errorf("Error encountered when marshalling object to json. We will not continue. Discord Out object: '%v+'. Error: %w", DO, err)
+		return nil, fmt.Errorf("Error encountered when publishing message to discord: %w", err)
 	}
 
-	_, err = af.client.Post(af.webhookURL, "application/json", bytes.NewReader(DOD))
-	if err != nil {
-		return fmt.Errorf("Error encountered sending POST to '%s'. Error: %w", af.webhookURL, err)
-	}
-
-	return nil
+	return res, nil
 }
 
 func (af *AlertForwarder) TransformAndForward(w http.ResponseWriter, r *http.Request) {
@@ -155,12 +136,17 @@ func (af *AlertForwarder) TransformAndForward(w http.ResponseWriter, r *http.Req
 	if err != nil {
 		if prometheus.IsAlert(b) {
 			log.Printf("Detected a Prometheus Alert, and not an AlertManager alert, has been sent within the http request. This indicates a misconfiguration. Attempting to send a message to notify the Discord channel of the misconfiguration.")
-			err = af.sendRawPromAlertWarn()
-			if err != nil {
-				log.Printf("Error in attempting to send a warning on Discord regarding Raw Prometheus Alerts. Error: %s", err)
+			res, err := af.sendRawPromAlertWarn()
+			if err != nil || (res != nil && res.StatusCode < 200 || res.StatusCode > 399) {
+				statusCode := 0
+				if res != nil {
+					statusCode = res.StatusCode
+				}
+				log.Printf("Error in attempting to send a warning on Discord regarding Raw Prometheus Alerts. Status Code: '%d', Error: %s", statusCode, err)
 				w.WriteHeader(http.StatusInternalServerError)
 				return
 			}
+
 			w.WriteHeader(http.StatusUnprocessableEntity)
 			return
 		}
