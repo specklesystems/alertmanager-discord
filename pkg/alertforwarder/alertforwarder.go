@@ -140,7 +140,9 @@ func (af *AlertForwarder) TransformAndForward(w http.ResponseWriter, r *http.Req
 
 	b, err := io.ReadAll(r.Body)
 	if err != nil {
-		panic(err)
+		w.WriteHeader(http.StatusInternalServerError)
+		log.Print("Unable to read request body.")
+		return
 	}
 
 	amo := alertmanager.Out{}
