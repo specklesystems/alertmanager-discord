@@ -93,6 +93,19 @@ Or to build the Dockerfile on Apple Silicon (M1, M2 etc.):
 docker buildx build --platform=linux/amd64 . -t speckle/alertmanager-discord:local
 ```
 
+### Testing
+
+```shell
+go test ./... -v -cover -test.shuffle on
+```
+
+## Design philosophy
+
+- small footprint
+- No external dependencies (go mod is empty).
+  - There are AlertManager and Discord go libraries; we only require a couple of types so the additional complexity & size would outweight the benefit.
+- binary should be agnostic to deployment location or method.
+
 ## Acknowledgements
 
 This repository is forked from https://github.com/benjojo/alertmanager-discord under the Apache 2.0 license

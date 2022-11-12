@@ -14,7 +14,7 @@ import (
 func Test_TransformAndForward_HappyPath(t *testing.T) {
 	req := httptest.NewRequest(http.MethodPost, "/", strings.NewReader(`{
       "alerts":[{"status":"firing"}],
-      "commonAnnotations":{"summary":""},
+      "commonAnnotations":{"summary":"a_common_annotation_summary"},
       "commonLabels":{"alertname":""},
       "externalURL":"",
       "groupKey":"",
@@ -62,10 +62,23 @@ func Test_TransformAndForward_HappyPath(t *testing.T) {
 	if do.Embeds[0].Color != expectedColor {
 		t.Errorf("expected do.Embeds[0].Color to be %d, but was %d.", expectedColor, do.Embeds[0].Color)
 	}
+
+  expectedContent := "a_common_annotation_summary"
+  if !strings.Contains(do.Content, expectedContent) {
+    t.Errorf("expected to contain %s, but was %s", expectedContent, do.Content)
+  }
 }
 
 // a notification with no alerts will not be forwarded to Discord
 
-// send a raw prom alert, receive a warning
+// alert without a common annotation summary
 
-//
+// alert with a label 'instance'='localhost' and 'exported_instance' label is set, should have the instance replaced by 'exported_instance'
+
+// CheckWebhookURL happy path test
+
+// CheckWebhookURL invalid url test
+
+// CheckWebhookURL unhappy path test
+
+// send a raw prom alert, receive a warning
