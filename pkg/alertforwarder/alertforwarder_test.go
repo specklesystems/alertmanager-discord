@@ -134,7 +134,7 @@ func Test_TransformAndForward_PrometheusAlert_And_DiscordClientResponsdsWithErro
 	res := w.Result()
 	defer res.Body.Close()
 
-	EqualInt(t, http.StatusUnprocessableEntity, res.StatusCode, "Should expect an http response status code indicating request was unprocessable.")
+	EqualInt(t, http.StatusInternalServerError, res.StatusCode, "Should expect an http response status code indicating request was unprocessable.")
 
 	IsTrue(t, mockClientRecorder.ClientTriggered, "should have sent a request to Discord (with a message stating there is a problem)")
 	// TODO test message content sent to Discord
@@ -202,7 +202,7 @@ func Test_TransformAndForward_NoCommonAnnotationSummary_HappyPath(t *testing.T) 
 	EqualStr(t, "", do.Content, "Discord message content")
 }
 
-func Test_TransformAndForward_Resolved_HappyPath(t *testing.T) {
+func Test_TransformAndForward_StatusResolved_HappyPath(t *testing.T) {
 	ao := alertmanager.Out{
 		Alerts: []alertmanager.Alert{
 			{
