@@ -14,7 +14,7 @@ import (
 )
 
 const (
-	serverListenAddress = "127.0.0.1:9094"
+	serverListenAddress = "127.0.0.1:9096"
 )
 
 func Test_Serve_HappyPath(t *testing.T) {
@@ -40,11 +40,14 @@ func Test_Serve_HappyPath(t *testing.T) {
 	}
 
 	res, err := client.Get(fmt.Sprintf("http://%s/liveness", serverListenAddress))
-	EqualInt(t, http.StatusOK, res.StatusCode, "Liveness probe should return status code OK (200)")
+	NotNil(t, res, "response to GET liveness should not be nil")
+	EqualInt(t, http.StatusOK, res.StatusCode, "GET liveness should return status code OK (200)")
 	res, err = client.Get(fmt.Sprintf("http://%s/readiness", serverListenAddress))
-	EqualInt(t, http.StatusOK, res.StatusCode, "Readiness probe should return status code OK (200)")
+	NotNil(t, res, "response to GET readiness should not be nil")
+	EqualInt(t, http.StatusOK, res.StatusCode, "GET readiness should return status code OK (200)")
 	res, err = client.Get(fmt.Sprintf("http://%s/favicon.ico", serverListenAddress))
-	EqualInt(t, http.StatusOK, res.StatusCode, "Favicon.ico request should return status code OK (200)")
+	NotNil(t, res, "response to GET favicon.ico should not be nil")
+	EqualInt(t, http.StatusOK, res.StatusCode, "GET favicon.ico should return status code OK (200)")
 
 	//assert mock discord server received expected json
 	ao := alertmanager.Out{
@@ -74,7 +77,7 @@ func Test_Serve_HappyPath(t *testing.T) {
 		}
 	}()
 	NoError(t, err, "sending request to alertmanager-discord server.")
-
+	NotNil(t, res, "response to POST '/' should not be nil")
 	EqualInt(t, http.StatusOK, res.StatusCode, "sending valid alertmanager data should expect http response status code")
 	IsTrue(t, <-receivedRequest, "Mock discord server should have received response") // will wait until the request is received
 
@@ -89,7 +92,7 @@ func Test_Server_InvalidDiscordUrl(t *testing.T) {
 		NoError(t, err, "server shutdown should not error")
 	}()
 
-	_, err := amds.ListenAndServe("https://example.org/not/a/discord/webhook/api", serverListenAddress)
+	_, err := amds.ListenAndServe("https://example.org/not/a/discord/webhook/api", "127.0.0.1:9095")
 	HasError(t, err, "server ListenAndServe should return an error for an invalid url")
 }
 
@@ -109,7 +112,8 @@ func Test_Server_With_EmptyListenAddress_DefaultsToListenAddress(t *testing.T) {
 	}
 
 	// it should have defaulted to the default listen address
-	res, err := client.Get(fmt.Sprintf("http://%s/liveness", serverListenAddress))
+	res, err := client.Get(fmt.Sprintf("http://%s/liveness", "127.0.0.1:9094"))
+	NotNil(t, res, "Response should not be nil")
 	EqualInt(t, http.StatusOK, res.StatusCode, "Liveness probe should return status code OK (200)")
 }
 

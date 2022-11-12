@@ -27,10 +27,10 @@ func (amds *AlertManagerDiscordServer) ListenAndServe(webhookUrl, listenAddress 
 	stop := make(chan os.Signal, 1)
 	mux := http.NewServeMux()
 
-	ok, _ := alertforwarder.CheckWebhookURL(webhookUrl)
+	ok, _, err := alertforwarder.CheckWebhookURL(webhookUrl)
 	if !ok {
 		log.Printf("URL is invalid, exiting program...")
-		return stop, fmt.Errorf("url is invalid")
+		return stop, fmt.Errorf("url is invalid: %w", err)
 	}
 
 	if listenAddress == "" {

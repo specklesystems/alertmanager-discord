@@ -75,3 +75,12 @@ message : %s`, message)
 	}
 }
 
+func NotNil(t *testing.T, obj interface{}, message string) {
+	if obj == nil {
+		t.Errorf(`
+Error:
+expected to not be nil, but was nil
+message : %s`, message)
+	}
+}
+

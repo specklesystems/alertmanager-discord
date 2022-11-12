@@ -24,6 +24,7 @@ func main() {
 		}
 	}()
 	if err != nil {
+		log.Printf("Error in AlertManager-Discord server: %s", err)
 		close(stopCh)
 	}
 
