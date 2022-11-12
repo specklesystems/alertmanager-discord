@@ -2,6 +2,7 @@ package server
 
 import (
 	"context"
+	"fmt"
 	"log"
 	"net/http"
 	"os"
@@ -22,12 +23,14 @@ type AlertManagerDiscordServer struct {
 	httpServer *http.Server
 }
 
-func (amds *AlertManagerDiscordServer) ListenAndServe(webhookUrl, listenAddress string) (error, chan os.Signal) {
+func (amds *AlertManagerDiscordServer) ListenAndServe(webhookUrl, listenAddress string) (chan os.Signal, error) {
+	stop := make(chan os.Signal, 1)
 	mux := http.NewServeMux()
 
 	ok, _ := alertforwarder.CheckWebhookURL(webhookUrl)
 	if !ok {
-		log.Fatal("URL is invalid, exiting program...")
+		log.Printf("URL is invalid, exiting program...")
+		return stop, fmt.Errorf("url is invalid")
 	}
 
 	if listenAddress == "" {
@@ -36,10 +39,10 @@ func (amds *AlertManagerDiscordServer) ListenAndServe(webhookUrl, listenAddress 
 	}
 	log.Printf("Listening on: %s", listenAddress)
 
-	client := &http.Client{
+	discordClient := &http.Client{
 		Timeout: 5 * time.Second,
 	}
-	af := alertforwarder.NewAlertForwarder(client, webhookUrl)
+	af := alertforwarder.NewAlertForwarder(discordClient, webhookUrl)
 
 	mux.HandleFunc("/", af.TransformAndForward)
 
@@ -64,28 +67,37 @@ func (amds *AlertManagerDiscordServer) ListenAndServe(webhookUrl, listenAddress 
 	}
 
 	// Setting up signal capturing
-	stop := make(chan os.Signal, 1)
 	signal.Notify(stop, os.Interrupt)
 
 	go func() {
+		// check for nil prevents race condition if we have already shutdown the server before this goroutine attempts to start
+		if amds.httpServer != nil {
 			if err := amds.httpServer.ListenAndServe(); err != nil {
 				close(stop)
 			}
+		}
 	}()
 
-	return nil, stop
+	return stop, nil
 }
 
 func (amds *AlertManagerDiscordServer) Shutdown() error {
 	log.Print("Received signal to shut down server. Shutting down server...")
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
+	if amds.httpServer == nil {
+		// http server is not referenced, or was never created, so we're unable to shut it down
+		return nil
+	}
+
 	if err := amds.httpServer.Shutdown(ctx); err != nil {
 		log.Printf("Error received on server shutdown: %s", err)
+		 // prevent race condition if shutdown signal was sent prior to server starting, we remove server reference to prevent it starting
 		amds.httpServer = nil
 		return err
 	}
 
+	// prevent race condition if shutdown signal was sent prior to server starting, we remove server remove to prevent it starting
 	amds.httpServer = nil
 	return nil
 }

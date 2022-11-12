@@ -66,3 +66,12 @@ message : %s`, err, message)
 	}
 }
 
+func HasError(t *testing.T, err error, message string) {
+	if err == nil {
+		t.Errorf(`
+Error was expected:
+expected to not be nil, but was nil
+message : %s`, message)
+	}
+}
+
