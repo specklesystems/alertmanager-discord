@@ -1,4 +1,4 @@
-package alertforwarder
+package test
 
 import (
 	// "bytes"
@@ -8,23 +8,23 @@ import (
 
 type mockClientRequestHandler func(url, contentType string, body io.Reader) (resp *http.Response, err error)
 
-type mockClient struct {
+type MockClient struct {
 	RequestHandler mockClientRequestHandler
 }
 
-type mockClientRecorder struct {
+type MockClientRecorder struct {
 	ClientTriggered bool
 	Url             string
 	ContentType     string
 	Body            io.Reader
 }
 
-func (mc mockClient) Post(url, contentType string, body io.Reader) (resp *http.Response, err error) {
+func (mc MockClient) Post(url, contentType string, body io.Reader) (resp *http.Response, err error) {
 	return mc.RequestHandler(url, contentType, body)
 }
 
-func (mc *mockClientRecorder) NewMockClientWithResponse(statusCode int) mockClient {
-	return mockClient{
+func (mc *MockClientRecorder) NewMockClientWithResponse(statusCode int) MockClient {
+	return MockClient{
 		RequestHandler: func(url, contentType string, requestBody io.Reader) (resp *http.Response, err error) {
 			mc.ClientTriggered = true
 			mc.Url = url

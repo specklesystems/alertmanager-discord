@@ -9,6 +9,7 @@ import (
 	"testing"
 
 	"github.com/specklesystems/alertmanager-discord/pkg/discord"
+	. "github.com/specklesystems/alertmanager-discord/test"
 )
 
 func Test_TransformAndForward_HappyPath(t *testing.T) {
@@ -24,7 +25,7 @@ func Test_TransformAndForward_HappyPath(t *testing.T) {
       "version":""}`))
 	req.Host = "testing.localhost"
 
-	mockClientRecorder := mockClientRecorder{}
+	mockClientRecorder := MockClientRecorder{}
 	mockClient := mockClientRecorder.NewMockClientWithResponse(http.StatusBadRequest)
 
 	SUT := NewAlertForwarder(mockClient, "https://discordapp.com/api/webhooks/123456789123456789/abc")
