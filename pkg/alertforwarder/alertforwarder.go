@@ -7,8 +7,6 @@ import (
 	"io"
 	"log"
 	"net/http"
-	"net/url"
-	"regexp"
 	"strings"
 
 	"github.com/specklesystems/alertmanager-discord/pkg/alertmanager"
@@ -29,21 +27,6 @@ func NewAlertForwarder(client httpClient, webhookURL string) AlertForwarder {
 	return AlertForwarder{
 		client:     client,
 		webhookURL: webhookURL,
-	}
-}
-
-func CheckWebhookURL(webhookURL string) {
-	if webhookURL == "" {
-		log.Fatalf("Environment variable 'DISCORD_WEBHOOK' or CLI parameter 'webhook.url' not found.")
-	}
-	_, err := url.Parse(webhookURL)
-	if err != nil {
-		log.Fatalf("The Discord WebHook URL doesn't seem to be a valid URL.")
-	}
-
-	re := regexp.MustCompile(`https://discord(?:app)?.com/api/webhooks/[0-9]{18,19}/[a-zA-Z0-9_-]+`)
-	if ok := re.Match([]byte(webhookURL)); !ok {
-		log.Printf("The Discord WebHook URL doesn't seem to be valid.")
 	}
 }
 
@@ -102,7 +85,7 @@ func (af *AlertForwarder) sendWebhook(amo *alertmanager.Out) {
 
 		_, err = af.client.Post(af.webhookURL, "application/json", bytes.NewReader(DOD))
 		if err != nil {
-			log.Printf("Error encountered undertaking POST to '%s'.", af.webhookURL)
+			log.Printf("Error encountered sending POST to '%s'.", af.webhookURL)
 		}
 	}
 }
@@ -136,7 +119,10 @@ func (af *AlertForwarder) sendRawPromAlertWarn() {
 		return
 	}
 
-	http.Post(af.webhookURL, "application/json", bytes.NewReader(DOD))
+	_, err = af.client.Post(af.webhookURL, "application/json", bytes.NewReader(DOD))
+	if err != nil {
+		log.Printf("Error encountered sending POST to '%s'.", af.webhookURL)
+	}
 }
 
 func (af *AlertForwarder) TransformAndForward(w http.ResponseWriter, r *http.Request) {
@@ -152,6 +138,7 @@ func (af *AlertForwarder) TransformAndForward(w http.ResponseWriter, r *http.Req
 	if err != nil {
 		if prometheus.IsAlert(b) {
 			af.sendRawPromAlertWarn()
+			w.WriteHeader(http.StatusUnprocessableEntity)
 			return
 		}
 
@@ -161,6 +148,7 @@ func (af *AlertForwarder) TransformAndForward(w http.ResponseWriter, r *http.Req
 			log.Printf("Failed to unpack inbound alert request - %s", string(b))
 		}
 
+		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
 

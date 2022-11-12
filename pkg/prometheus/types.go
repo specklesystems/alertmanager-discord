@@ -1,8 +1,10 @@
 package prometheus
 
-import "encoding/json"
+import (
+	"encoding/json"
+)
 
-type alert struct {
+type Alert struct {
 	Annotations struct {
 		Description string `json:"description"`
 		Summary     string `json:"summary"`
@@ -15,9 +17,10 @@ type alert struct {
 }
 
 func IsAlert(b []byte) bool {
-	alertTest := make([]alert, 0)
+	alertTest := make([]Alert, 0)
 	err := json.Unmarshal(b, &alertTest)
 	if err == nil {
+
 		if len(alertTest) != 0 {
 			if alertTest[0].Status == "" {
 				// Ok it's more than likely then

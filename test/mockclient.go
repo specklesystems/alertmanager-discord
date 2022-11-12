@@ -23,7 +23,7 @@ func (mc MockClient) Post(url, contentType string, body io.Reader) (resp *http.R
 	return mc.RequestHandler(url, contentType, body)
 }
 
-func (mc *MockClientRecorder) NewMockClientWithResponse(statusCode int) MockClient {
+func (mc *MockClientRecorder) NewMockClientWithResponse(statusCode int, errorHandlerShouldReturn error) MockClient {
 	return MockClient{
 		RequestHandler: func(url, contentType string, requestBody io.Reader) (resp *http.Response, err error) {
 			mc.ClientTriggered = true
@@ -35,7 +35,7 @@ func (mc *MockClientRecorder) NewMockClientWithResponse(statusCode int) MockClie
 				StatusCode: statusCode,
 				// Body: io.NopCloser(bytes.NewBufferString(responseBody)),
 			}
-			return resp, nil
+			return resp, errorHandlerShouldReturn
 		},
 	}
 }
