@@ -2,7 +2,7 @@
 
 This is a webserver that accepts webhooks from AlertManager. It will post your Prometheus alert notifications into a Discord channel as they trigger:
 
-![](/.github/demo-new.png)
+![](/.github/discord-screenshot.png)
 
 ## Warning
 
