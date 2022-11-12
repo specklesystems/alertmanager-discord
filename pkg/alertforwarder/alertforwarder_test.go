@@ -30,7 +30,7 @@ func Test_TransformAndForward_HappyPath(t *testing.T) {
 		},
 	}
 
-	mockClientRecorder, res := triggerAndRecordRequest(t, ao)
+	mockClientRecorder, res := triggerAndRecordRequest(t, ao, http.StatusOK, nil)
 	defer res.Body.Close()
 
 	EqualInt(t, http.StatusOK, res.StatusCode, "http response status code")
@@ -140,10 +140,38 @@ func Test_TransformAndForward_PrometheusAlert_And_DiscordClientResponsdsWithErro
 	//TODO test message content sent to Discord
 }
 
+func Test_TransformAndForward_PrometheusAlert_And_DiscordClientResponsdsWithErrorStatusCode_RespondsWithErrorStatusCode(t *testing.T) {
+	promAlert := []prometheus.Alert{
+		{
+			Status: "",
+		},
+	}
+	promAlertJson, err := json.Marshal(promAlert)
+	NoError(t, err, "marshalling prometheus alert")
+	req := httptest.NewRequest(http.MethodPost, "/", bytes.NewReader(promAlertJson))
+	req.Host = "testing.localhost"
+
+	mockClientRecorder := MockClientRecorder{}
+	mockClient := mockClientRecorder.NewMockClientWithResponse(http.StatusBadRequest, nil)
+
+	SUT := NewAlertForwarder(mockClient, "https://discordapp.com/api/webhooks/123456789123456789/abc")
+
+	w := httptest.NewRecorder()
+	SUT.TransformAndForward(w, req)
+
+	res := w.Result()
+	defer res.Body.Close()
+
+	EqualInt(t, http.StatusUnprocessableEntity, res.StatusCode, "Should expect an http response status code indicating request was unprocessable.")
+
+	IsTrue(t, mockClientRecorder.ClientTriggered, "should have sent a request to Discord (with a message stating there is a problem)")
+	//TODO test message content sent to Discord
+}
+
 func Test_TransformAndForward_NoAlerts_DoesNotSendToDiscord(t *testing.T) {
 	ao := alertmanager.Out{}
 
-	mockClientRecorder, res := triggerAndRecordRequest(t, ao)
+	mockClientRecorder, res := triggerAndRecordRequest(t, ao, http.StatusBadRequest, nil)
 	defer res.Body.Close()
 
 	EqualInt(t, http.StatusOK, res.StatusCode, "http response status code")
@@ -151,7 +179,6 @@ func Test_TransformAndForward_NoAlerts_DoesNotSendToDiscord(t *testing.T) {
 	IsFalse(t, mockClientRecorder.ClientTriggered, "mock client should not be triggered")
 }
 
-// alert without a common annotation summary
 func Test_TransformAndForward_NoCommonAnnotationSummary_HappyPath(t *testing.T) {
 	ao := alertmanager.Out{
 		Alerts: []alertmanager.Alert{
@@ -161,7 +188,7 @@ func Test_TransformAndForward_NoCommonAnnotationSummary_HappyPath(t *testing.T) 
 			},
 	}
 
-	mockClientRecorder, res := triggerAndRecordRequest(t, ao)
+	mockClientRecorder, res := triggerAndRecordRequest(t, ao, http.StatusOK, nil)
 	defer res.Body.Close()
 
 	EqualInt(t, http.StatusOK, res.StatusCode, "http response status code")
@@ -184,7 +211,7 @@ func Test_TransformAndForward_Resolved_HappyPath(t *testing.T) {
 			},
 	}
 
-	mockClientRecorder, res := triggerAndRecordRequest(t, ao)
+	mockClientRecorder, res := triggerAndRecordRequest(t, ao, http.StatusOK, nil)
 	defer res.Body.Close()
 
 	EqualInt(t, http.StatusOK, res.StatusCode, "http response status code")
@@ -210,7 +237,7 @@ func Test_TransformAndForward_ExportedInstance_HappyPath(t *testing.T) {
 			},
 	}
 
-	mockClientRecorder, res := triggerAndRecordRequest(t, ao)
+	mockClientRecorder, res := triggerAndRecordRequest(t, ao, http.StatusOK, nil)
 	defer res.Body.Close()
 
 	EqualInt(t, http.StatusOK, res.StatusCode, "http response status code")
@@ -241,24 +268,10 @@ func Test_TransformAndForward_DiscordClientReturnsError(t *testing.T) {
 		},
 	}
 
-	aoJson, err := json.Marshal(ao)
-	NoError(t, err, "marshalling alertmanager out")
-
-	req := httptest.NewRequest(http.MethodPost, "/", bytes.NewReader(aoJson))
-	req.Host = "testing.localhost"
-
-	mockClientRecorder := MockClientRecorder{}
-	mockClient := mockClientRecorder.NewMockClientWithResponse(http.StatusOK, fmt.Errorf("an error in the Discord client."))
-
-	SUT := NewAlertForwarder(mockClient, "https://discordapp.com/api/webhooks/123456789123456789/abc")
-
-	w := httptest.NewRecorder()
-	SUT.TransformAndForward(w, req)
-
-	res := w.Result()
+	mockClientRecorder, res := triggerAndRecordRequest(t, ao, http.StatusOK, fmt.Errorf("an error in the Discord client."))
 	defer res.Body.Close()
 
-	EqualInt(t, http.StatusOK, res.StatusCode, "http response status code")
+	EqualInt(t, http.StatusInternalServerError, res.StatusCode, "http response status code")
 
 	IsTrue(t, mockClientRecorder.ClientTriggered, "Should have sent a request to Discord")
 	EqualStr(t, "application/json", mockClientRecorder.ContentType, "content type")
@@ -269,9 +282,32 @@ func Test_TransformAndForward_DiscordClientReturnsError(t *testing.T) {
 	Contains(t, "a_common_annotation_summary", do.Content, "Discord message content")
 }
 
+func Test_TransformAndForward_DiscordReturnsWithErrorStatusCode_ReturnInternalServerErrorStatusCode(t *testing.T) {
+	ao := alertmanager.Out{
+		Alerts: []alertmanager.Alert{
+				{
+					Status: alertmanager.StatusFiring,
+				},
+			},
+		CommonAnnotations: struct {
+		Summary string `json:"summary"`
+		}{
+			Summary: "a_common_annotation_summary",
+		},
+	}
+
+	mockClientRecorder, res := triggerAndRecordRequest(t, ao, http.StatusUnauthorized, nil)
+	defer res.Body.Close()
+
+	IsTrue(t, mockClientRecorder.ClientTriggered, "Should have sent a request to Discord")
+	EqualStr(t, "application/json", mockClientRecorder.ContentType, "content type")
+
+	EqualInt(t, http.StatusInternalServerError, res.StatusCode, "http response status code should be 500")
+}
+
 // HELPERS
 
-func triggerAndRecordRequest(t *testing.T, request alertmanager.Out) (mockClientRecorder MockClientRecorder, httpResponse *http.Response) {
+func triggerAndRecordRequest(t *testing.T, request alertmanager.Out, discordStatusCode int, discordClientError error) (mockClientRecorder MockClientRecorder, httpResponse *http.Response) {
 	aoJson, err := json.Marshal(request)
 	NoError(t, err, "marshalling alertmanager out")
 
@@ -279,7 +315,7 @@ func triggerAndRecordRequest(t *testing.T, request alertmanager.Out) (mockClient
 	req.Host = "testing.localhost"
 
 	mockClientRecorder = MockClientRecorder{}
-	mockClient := mockClientRecorder.NewMockClientWithResponse(http.StatusOK, nil)
+	mockClient := mockClientRecorder.NewMockClientWithResponse(discordStatusCode, discordClientError)
 
 	SUT := NewAlertForwarder(mockClient, "https://discordapp.com/api/webhooks/123456789123456789/abc")
 

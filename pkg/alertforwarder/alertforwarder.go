@@ -30,7 +30,7 @@ func NewAlertForwarder(client httpClient, webhookURL string) AlertForwarder {
 	}
 }
 
-func (af *AlertForwarder) sendWebhook(amo *alertmanager.Out) {
+func (af *AlertForwarder) sendWebhook(amo *alertmanager.Out, w http.ResponseWriter) {
 	groupedAlerts := make(map[string][]alertmanager.Alert)
 
 	if len(amo.Alerts) < 1 {
@@ -83,9 +83,19 @@ func (af *AlertForwarder) sendWebhook(amo *alertmanager.Out) {
 			return
 		}
 
-		_, err = af.client.Post(af.webhookURL, "application/json", bytes.NewReader(DOD))
+		res, err := af.client.Post(af.webhookURL, "application/json", bytes.NewReader(DOD))
+		if res != nil && res.Body != nil {
+			defer res.Body.Close()
+		}
 		if err != nil {
 			log.Printf("Error encountered sending POST to '%s'.", af.webhookURL)
+			w.WriteHeader(http.StatusInternalServerError)
+		}
+		if res.StatusCode < 200 || res.StatusCode > 399 {
+			w.WriteHeader(http.StatusInternalServerError)
+			if res.Body != nil {
+				io.Copy(w, res.Body)
+			}
 		}
 	}
 }
@@ -152,5 +162,5 @@ func (af *AlertForwarder) TransformAndForward(w http.ResponseWriter, r *http.Req
 		return
 	}
 
-	af.sendWebhook(&amo)
+	af.sendWebhook(&amo, w)
 }
