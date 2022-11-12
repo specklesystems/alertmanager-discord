@@ -1,8 +1,8 @@
-package alertforwarder
+package prometheus
 
 import "encoding/json"
 
-type rawPromAlert struct {
+type alert struct {
 	Annotations struct {
 		Description string `json:"description"`
 		Summary     string `json:"summary"`
@@ -14,8 +14,8 @@ type rawPromAlert struct {
 	Status       string            `json:"status"`
 }
 
-func isRawPromAlert(b []byte) bool {
-	alertTest := make([]rawPromAlert, 0)
+func IsAlert(b []byte) bool {
+	alertTest := make([]alert, 0)
 	err := json.Unmarshal(b, &alertTest)
 	if err == nil {
 		if len(alertTest) != 0 {

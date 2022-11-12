@@ -13,6 +13,7 @@ import (
 
 	"github.com/benjojo/alertmanager-discord/pkg/alertmanager"
 	"github.com/benjojo/alertmanager-discord/pkg/discord"
+	"github.com/benjojo/alertmanager-discord/pkg/prometheus"
 )
 
 type AlertForwarder struct {
@@ -31,23 +32,28 @@ func NewAlertForwarder(client httpClient, webhookURL string) AlertForwarder {
 	}
 }
 
-func CheckWebhookURL(whURL string) {
-	if whURL == "" {
+func CheckWebhookURL(webhookURL string) {
+	if webhookURL == "" {
 		log.Fatalf("Environment variable 'DISCORD_WEBHOOK' or CLI parameter 'webhook.url' not found.")
 	}
-	_, err := url.Parse(whURL)
+	_, err := url.Parse(webhookURL)
 	if err != nil {
 		log.Fatalf("The Discord WebHook URL doesn't seem to be a valid URL.")
 	}
 
 	re := regexp.MustCompile(`https://discord(?:app)?.com/api/webhooks/[0-9]{18,19}/[a-zA-Z0-9_-]+`)
-	if ok := re.Match([]byte(whURL)); !ok {
+	if ok := re.Match([]byte(webhookURL)); !ok {
 		log.Printf("The Discord WebHook URL doesn't seem to be valid.")
 	}
 }
 
 func (af *AlertForwarder) sendWebhook(amo *alertmanager.Out) {
 	groupedAlerts := make(map[string][]alertmanager.Alert)
+
+	if len(amo.Alerts) < 1 {
+		log.Printf("There are no alerts within this notification. There is nothing to forward to Discord. Returning early...")
+		return
+	}
 
 	for _, alert := range amo.Alerts {
 		groupedAlerts[alert.Status] = append(groupedAlerts[alert.Status], alert)
@@ -144,7 +150,7 @@ func (af *AlertForwarder) TransformAndForward(w http.ResponseWriter, r *http.Req
 	amo := alertmanager.Out{}
 	err = json.Unmarshal(b, &amo)
 	if err != nil {
-		if isRawPromAlert(b) {
+		if prometheus.IsAlert(b) {
 			af.sendRawPromAlertWarn()
 			return
 		}
