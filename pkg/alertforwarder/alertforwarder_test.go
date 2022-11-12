@@ -19,12 +19,12 @@ import (
 func Test_TransformAndForward_HappyPath(t *testing.T) {
 	ao := alertmanager.Out{
 		Alerts: []alertmanager.Alert{
-				{
-					Status: alertmanager.StatusFiring,
-				},
+			{
+				Status: alertmanager.StatusFiring,
 			},
+		},
 		CommonAnnotations: struct {
-		Summary string `json:"summary"`
+			Summary string `json:"summary"`
 		}{
 			Summary: "a_common_annotation_summary",
 		},
@@ -109,7 +109,7 @@ func Test_TransformAndForward_InvalidInput_PrometheusAlert_ReturnsErrorResponseC
 	EqualInt(t, http.StatusUnprocessableEntity, res.StatusCode, "Should expect an http response status code indicating request was unprocessable.")
 
 	IsTrue(t, mockClientRecorder.ClientTriggered, "should have sent a request to Discord (with a message stating there is a problem)")
-	//TODO test message content sent to Discord
+	// TODO test message content sent to Discord
 }
 
 func Test_TransformAndForward_PrometheusAlert_And_DiscordClientResponsdsWithError_RespondsWithErrorCode(t *testing.T) {
@@ -137,7 +137,7 @@ func Test_TransformAndForward_PrometheusAlert_And_DiscordClientResponsdsWithErro
 	EqualInt(t, http.StatusUnprocessableEntity, res.StatusCode, "Should expect an http response status code indicating request was unprocessable.")
 
 	IsTrue(t, mockClientRecorder.ClientTriggered, "should have sent a request to Discord (with a message stating there is a problem)")
-	//TODO test message content sent to Discord
+	// TODO test message content sent to Discord
 }
 
 func Test_TransformAndForward_PrometheusAlert_And_DiscordClientResponsdsWithErrorStatusCode_RespondsWithErrorStatusCode(t *testing.T) {
@@ -165,7 +165,7 @@ func Test_TransformAndForward_PrometheusAlert_And_DiscordClientResponsdsWithErro
 	EqualInt(t, http.StatusUnprocessableEntity, res.StatusCode, "Should expect an http response status code indicating request was unprocessable.")
 
 	IsTrue(t, mockClientRecorder.ClientTriggered, "should have sent a request to Discord (with a message stating there is a problem)")
-	//TODO test message content sent to Discord
+	// TODO test message content sent to Discord
 }
 
 func Test_TransformAndForward_NoAlerts_DoesNotSendToDiscord(t *testing.T) {
@@ -182,10 +182,10 @@ func Test_TransformAndForward_NoAlerts_DoesNotSendToDiscord(t *testing.T) {
 func Test_TransformAndForward_NoCommonAnnotationSummary_HappyPath(t *testing.T) {
 	ao := alertmanager.Out{
 		Alerts: []alertmanager.Alert{
-				{
-					Status: alertmanager.StatusFiring,
-				},
+			{
+				Status: alertmanager.StatusFiring,
 			},
+		},
 	}
 
 	mockClientRecorder, res := triggerAndRecordRequest(t, ao, http.StatusOK, nil)
@@ -205,10 +205,10 @@ func Test_TransformAndForward_NoCommonAnnotationSummary_HappyPath(t *testing.T) 
 func Test_TransformAndForward_Resolved_HappyPath(t *testing.T) {
 	ao := alertmanager.Out{
 		Alerts: []alertmanager.Alert{
-				{
-					Status: alertmanager.StatusResolved,
-				},
+			{
+				Status: alertmanager.StatusResolved,
 			},
+		},
 	}
 
 	mockClientRecorder, res := triggerAndRecordRequest(t, ao, http.StatusOK, nil)
@@ -227,14 +227,14 @@ func Test_TransformAndForward_Resolved_HappyPath(t *testing.T) {
 func Test_TransformAndForward_ExportedInstance_HappyPath(t *testing.T) {
 	ao := alertmanager.Out{
 		Alerts: []alertmanager.Alert{
-				{
-					Status: alertmanager.StatusFiring,
-					Labels: map[string]string {
-						"instance": "localhost",
-						"exported_instance": "exported_instance_value",
-					},
+			{
+				Status: alertmanager.StatusFiring,
+				Labels: map[string]string{
+					"instance":          "localhost",
+					"exported_instance": "exported_instance_value",
 				},
 			},
+		},
 	}
 
 	mockClientRecorder, res := triggerAndRecordRequest(t, ao, http.StatusOK, nil)
@@ -257,12 +257,12 @@ func Test_TransformAndForward_ExportedInstance_HappyPath(t *testing.T) {
 func Test_TransformAndForward_DiscordClientReturnsError(t *testing.T) {
 	ao := alertmanager.Out{
 		Alerts: []alertmanager.Alert{
-				{
-					Status: alertmanager.StatusFiring,
-				},
+			{
+				Status: alertmanager.StatusFiring,
 			},
+		},
 		CommonAnnotations: struct {
-		Summary string `json:"summary"`
+			Summary string `json:"summary"`
 		}{
 			Summary: "a_common_annotation_summary",
 		},
@@ -285,12 +285,12 @@ func Test_TransformAndForward_DiscordClientReturnsError(t *testing.T) {
 func Test_TransformAndForward_DiscordReturnsWithErrorStatusCode_ReturnInternalServerErrorStatusCode(t *testing.T) {
 	ao := alertmanager.Out{
 		Alerts: []alertmanager.Alert{
-				{
-					Status: alertmanager.StatusFiring,
-				},
+			{
+				Status: alertmanager.StatusFiring,
 			},
+		},
 		CommonAnnotations: struct {
-		Summary string `json:"summary"`
+			Summary string `json:"summary"`
 		}{
 			Summary: "a_common_annotation_summary",
 		},

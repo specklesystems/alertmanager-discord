@@ -27,7 +27,7 @@ func Test_Serve_HappyPath(t *testing.T) {
 	defer mockDiscordServer.Close()
 
 	amds := AlertManagerDiscordServer{}
-	defer func () {
+	defer func() {
 		err := amds.Shutdown()
 		NoError(t, err, "server shutdown should not error")
 	}()
@@ -49,15 +49,15 @@ func Test_Serve_HappyPath(t *testing.T) {
 	NotNil(t, res, "response to GET favicon.ico should not be nil")
 	EqualInt(t, http.StatusOK, res.StatusCode, "GET favicon.ico should return status code OK (200)")
 
-	//assert mock discord server received expected json
+	// assert mock discord server received expected json
 	ao := alertmanager.Out{
 		Alerts: []alertmanager.Alert{
-				{
-					Status: alertmanager.StatusFiring,
-				},
+			{
+				Status: alertmanager.StatusFiring,
 			},
+		},
 		CommonAnnotations: struct {
-		Summary string `json:"summary"`
+			Summary string `json:"summary"`
 		}{
 			Summary: "a_common_annotation_summary",
 		},
@@ -81,13 +81,13 @@ func Test_Serve_HappyPath(t *testing.T) {
 	EqualInt(t, http.StatusOK, res.StatusCode, "sending valid alertmanager data should expect http response status code")
 	IsTrue(t, <-receivedRequest, "Mock discord server should have received response") // will wait until the request is received
 
-	//TODO assert log lines were generated
+	// TODO assert log lines were generated
 }
 
 // Test with invalid URL, throws an error
 func Test_Server_InvalidDiscordUrl(t *testing.T) {
 	amds := AlertManagerDiscordServer{}
-	defer func () {
+	defer func() {
 		err := amds.Shutdown()
 		NoError(t, err, "server shutdown should not error")
 	}()
@@ -99,7 +99,7 @@ func Test_Server_InvalidDiscordUrl(t *testing.T) {
 // Test that no listen address will set to default listen address
 func Test_Server_With_EmptyListenAddress_DefaultsToListenAddress(t *testing.T) {
 	amds := AlertManagerDiscordServer{}
-	defer func () {
+	defer func() {
 		err := amds.Shutdown()
 		NoError(t, err, "server shutdown should not error")
 	}()
@@ -116,4 +116,3 @@ func Test_Server_With_EmptyListenAddress_DefaultsToListenAddress(t *testing.T) {
 	NotNil(t, res, "Response should not be nil")
 	EqualInt(t, http.StatusOK, res.StatusCode, "Liveness probe should return status code OK (200)")
 }
-

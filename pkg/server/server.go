@@ -59,8 +59,8 @@ func (amds *AlertManagerDiscordServer) ListenAndServe(webhookUrl, listenAddress 
 	})
 
 	amds.httpServer = &http.Server{
-		Addr: listenAddress,
-		Handler: mux,
+		Addr:           listenAddress,
+		Handler:        mux,
 		ReadTimeout:    10 * time.Second,
 		WriteTimeout:   10 * time.Second,
 		MaxHeaderBytes: 1 << 20,
@@ -92,7 +92,7 @@ func (amds *AlertManagerDiscordServer) Shutdown() error {
 
 	if err := amds.httpServer.Shutdown(ctx); err != nil {
 		log.Printf("Error received on server shutdown: %s", err)
-		 // prevent race condition if shutdown signal was sent prior to server starting, we remove server reference to prevent it starting
+		// prevent race condition if shutdown signal was sent prior to server starting, we remove server reference to prevent it starting
 		amds.httpServer = nil
 		return err
 	}

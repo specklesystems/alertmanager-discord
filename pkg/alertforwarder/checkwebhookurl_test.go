@@ -1,8 +1,8 @@
 package alertforwarder
 
 import (
-	"testing"
 	. "github.com/specklesystems/alertmanager-discord/test"
+	"testing"
 )
 
 func Test_WebhookUrl_HappyPath(t *testing.T) {
