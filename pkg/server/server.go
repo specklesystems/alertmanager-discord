@@ -21,7 +21,8 @@ const (
 )
 
 type AlertManagerDiscordServer struct {
-	httpServer *http.Server
+	httpServer                *http.Server
+	MaximumBackoffTimeSeconds time.Duration
 }
 
 func (amds *AlertManagerDiscordServer) ListenAndServe(webhookUrl, listenAddress string) (chan os.Signal, error) {
@@ -42,7 +43,8 @@ func (amds *AlertManagerDiscordServer) ListenAndServe(webhookUrl, listenAddress 
 	discordClient := &http.Client{
 		Timeout: 5 * time.Second,
 	}
-	af := alertforwarder.NewAlertForwarder(discordClient, webhookUrl)
+
+	af := alertforwarder.NewAlertForwarder(discordClient, webhookUrl, amds.MaximumBackoffTimeSeconds)
 
 	mux.HandleFunc("/", af.TransformAndForward)
 

@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"time"
 
 	"github.com/specklesystems/alertmanager-discord/pkg/alertmanager"
 	"github.com/specklesystems/alertmanager-discord/pkg/discord"
@@ -21,9 +22,9 @@ type AlertForwarder struct {
 	client *discord.Client
 }
 
-func NewAlertForwarder(client discord.HttpClient, webhookURL string) AlertForwarder {
+func NewAlertForwarder(client discord.HttpClient, webhookURL string, maximumBackoffTimeSeconds time.Duration) AlertForwarder {
 	return AlertForwarder{
-		client: discord.NewClient(client, webhookURL),
+		client: discord.NewClient(client, webhookURL, maximumBackoffTimeSeconds),
 	}
 }
 

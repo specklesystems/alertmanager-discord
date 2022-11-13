@@ -9,6 +9,7 @@ import (
 	"net/http/httptest"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/specklesystems/alertmanager-discord/pkg/alertmanager"
 	"github.com/specklesystems/alertmanager-discord/pkg/discord"
@@ -53,7 +54,7 @@ func Test_TransformAndForward_InvalidInput_NoValue_ReturnsErrorResponseCode(t *t
 	mockClientRecorder := MockClientRecorder{}
 	mockClient := mockClientRecorder.NewMockClientWithResponse(http.StatusBadRequest, nil)
 
-	SUT := NewAlertForwarder(mockClient, "https://discordapp.com/api/webhooks/123456789123456789/abc")
+	SUT := NewAlertForwarder(mockClient, "https://discordapp.com/api/webhooks/123456789123456789/abc", 100*time.Millisecond)
 
 	w := httptest.NewRecorder()
 	SUT.TransformAndForward(w, req)
@@ -73,7 +74,7 @@ func Test_TransformAndForward_InvalidInput_LongString_ReturnsErrorResponseCode(t
 	mockClientRecorder := MockClientRecorder{}
 	mockClient := mockClientRecorder.NewMockClientWithResponse(http.StatusBadRequest, nil)
 
-	SUT := NewAlertForwarder(mockClient, "https://discordapp.com/api/webhooks/123456789123456789/abc")
+	SUT := NewAlertForwarder(mockClient, "https://discordapp.com/api/webhooks/123456789123456789/abc", 100*time.Millisecond)
 
 	w := httptest.NewRecorder()
 	SUT.TransformAndForward(w, req)
@@ -100,7 +101,7 @@ func Test_TransformAndForward_InvalidInput_PrometheusAlert_ReturnsErrorResponseC
 	mockClientRecorder := MockClientRecorder{}
 	mockClient := mockClientRecorder.NewMockClientWithResponse(http.StatusBadRequest, nil)
 
-	SUT := NewAlertForwarder(mockClient, "https://discordapp.com/api/webhooks/123456789123456789/abc")
+	SUT := NewAlertForwarder(mockClient, "https://discordapp.com/api/webhooks/123456789123456789/abc", 100*time.Millisecond)
 
 	w := httptest.NewRecorder()
 	SUT.TransformAndForward(w, req)
@@ -128,7 +129,7 @@ func Test_TransformAndForward_PrometheusAlert_And_DiscordClientResponsdsWithErro
 	mockClientRecorder := MockClientRecorder{}
 	mockClient := mockClientRecorder.NewMockClientWithResponse(http.StatusBadRequest, fmt.Errorf("Discord client responds with an error."))
 
-	SUT := NewAlertForwarder(mockClient, "https://discordapp.com/api/webhooks/123456789123456789/abc")
+	SUT := NewAlertForwarder(mockClient, "https://discordapp.com/api/webhooks/123456789123456789/abc", 100*time.Millisecond)
 
 	w := httptest.NewRecorder()
 	SUT.TransformAndForward(w, req)
@@ -138,7 +139,7 @@ func Test_TransformAndForward_PrometheusAlert_And_DiscordClientResponsdsWithErro
 
 	assert.Equal(t, http.StatusInternalServerError, res.StatusCode, "Should expect an http response status code indicating request was unprocessable.")
 
-	assert.Equal(t, 1, len(mockClientRecorder.Requests), "should have sent a request to Discord (with a message stating there is a problem)")
+	assert.GreaterOrEqual(t, len(mockClientRecorder.Requests), 1, "should have sent at least one request to Discord (with a message stating there is a problem)")
 	// TODO test message content sent to Discord
 }
 
@@ -156,7 +157,7 @@ func Test_TransformAndForward_PrometheusAlert_And_DiscordClientResponsdsWithErro
 	mockClientRecorder := MockClientRecorder{}
 	mockClient := mockClientRecorder.NewMockClientWithResponse(http.StatusBadRequest, nil)
 
-	SUT := NewAlertForwarder(mockClient, "https://discordapp.com/api/webhooks/123456789123456789/abc")
+	SUT := NewAlertForwarder(mockClient, "https://discordapp.com/api/webhooks/123456789123456789/abc", 100*time.Millisecond)
 
 	w := httptest.NewRecorder()
 	SUT.TransformAndForward(w, req)
@@ -275,7 +276,7 @@ func Test_TransformAndForward_DiscordClientReturnsError(t *testing.T) {
 
 	assert.Equal(t, http.StatusInternalServerError, res.StatusCode, "http response status code")
 
-	assert.Equal(t, 1, len(mockClientRecorder.Requests), "Should have sent a request to Discord")
+	assert.GreaterOrEqual(t, len(mockClientRecorder.Requests), 1, "Should have sent a request to Discord")
 	assert.Equal(t, "application/json", mockClientRecorder.Requests[0].ContentType, "content type")
 
 	do := readerToDiscordOut(t, mockClientRecorder.Requests[0].Body)
@@ -343,7 +344,7 @@ func triggerAndRecordRequest(t *testing.T, request alertmanager.Out, discordStat
 	mockClientRecorder = MockClientRecorder{}
 	mockClient := mockClientRecorder.NewMockClientWithResponse(discordStatusCode, discordClientError)
 
-	SUT := NewAlertForwarder(mockClient, "https://discordapp.com/api/webhooks/123456789123456789/abc")
+	SUT := NewAlertForwarder(mockClient, "https://discordapp.com/api/webhooks/123456789123456789/abc", 100*time.Millisecond)
 
 	w := httptest.NewRecorder()
 	SUT.TransformAndForward(w, req)
