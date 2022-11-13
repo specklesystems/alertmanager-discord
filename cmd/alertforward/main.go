@@ -12,6 +12,10 @@ import (
 	"github.com/rs/zerolog/log"
 )
 
+const (
+	maxBackoffTimeSecondsEnvVar = "MAX_BACKOFF_TIME_SECONDS"
+)
+
 var (
 	webhookURL                = flag.String("webhook.url", os.Getenv("DISCORD_WEBHOOK"), "Discord WebHook URL.")
 	listenAddress             = flag.String("listen.address", os.Getenv("LISTEN_ADDRESS"), "Address:Port to listen on.")
@@ -45,12 +49,17 @@ func main() {
 func parseMaxBackoffTimeSeconds() int {
 	var err error
 	maxBackoffTimeSeconds := *maximumBackoffTimeSeconds
-	if *maximumBackoffTimeSeconds <= 0 {
-		environmentString := os.Getenv("MAX_BACKOFF_TIME_SECONDS")
+	if maxBackoffTimeSeconds <= 0 {
+		log.Info().Msgf("Command line paramater `-max_backoff_time_seconds` was not set, attempting to read environment variable `%s`. Otherwise, will revert to default.", maxBackoffTimeSecondsEnvVar)
+		environmentString := os.Getenv(maxBackoffTimeSecondsEnvVar)
+		if environmentString == "" {
+			return maxBackoffTimeSeconds
+		}
+
 		maxBackoffTimeSeconds, err = strconv.Atoi(environmentString)
 		if err != nil {
 			maxBackoffTimeSeconds = 0
-			log.Warn().Msgf("Unable to parse environment variable `MAX_BACKOFF_TIME_SECONDS`: %s", environmentString)
+			log.Info().Msgf("Unable to parse environment variable `%s`: '%s'. Will revert to default value.", maxBackoffTimeSecondsEnvVar, environmentString)
 		}
 	}
 
