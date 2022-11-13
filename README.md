@@ -25,6 +25,22 @@ alerting:                 receivers:
 
 ```
 
+## Features
+
+- REST API
+- Small, standalone binary ( less than 6 Mb)
+- Small Docker (OCI) Image (also less than 6 Mb) with minimal dependencies
+- Helm Chart for deployment to Kubernetes.
+  - includes Cilium Network Policies which can be optionally enabled.
+- Liveness and Readiness probes, at `/liveness` and `/readiness`.
+- Unit and Integration tests, approx 90% coverage.
+
+### Roadmap
+
+- Structured Logging to stdout.
+- Prometheus metrics at `/metrics`.
+- REST API documented with OpenAPI (Swagger) specification.
+
 ## Example alertmanager config
 
 ```
@@ -118,8 +134,7 @@ go test ./... -v -cover -test.shuffle on
 ## Design philosophy
 
 - small footprint
-- No external dependencies (go mod is empty).
-  - There are AlertManager and Discord go libraries; we only require a couple of types so the additional complexity & size would outweight the benefit.
+- Minimal external dependencies
 - binary should be agnostic to deployment location or method.
 - synchronous; the connection to the server is kept open until the connection to Discord has responded (or errored). This allows the response code or error to be returned to the request - we can have more confidence that the message was sent, and have a better ability to quickly correlate which requests caused an error.
 

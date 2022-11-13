@@ -14,6 +14,8 @@ import (
 	"github.com/specklesystems/alertmanager-discord/pkg/discord"
 	"github.com/specklesystems/alertmanager-discord/pkg/prometheus"
 	. "github.com/specklesystems/alertmanager-discord/test"
+
+	"github.com/stretchr/testify/assert"
 )
 
 func Test_TransformAndForward_HappyPath(t *testing.T) {
@@ -33,15 +35,15 @@ func Test_TransformAndForward_HappyPath(t *testing.T) {
 	mockClientRecorder, res := triggerAndRecordRequest(t, ao, http.StatusOK, nil)
 	defer res.Body.Close()
 
-	EqualInt(t, http.StatusOK, res.StatusCode, "http response status code")
+	assert.Equal(t, http.StatusOK, res.StatusCode, "http response status code")
 
-	IsTrue(t, mockClientRecorder.ClientTriggered, "Should have sent a request to Discord")
-	EqualStr(t, "application/json", mockClientRecorder.ContentType, "content type")
+	assert.True(t, mockClientRecorder.ClientTriggered, "Should have sent a request to Discord")
+	assert.Equal(t, "application/json", mockClientRecorder.ContentType, "content type")
 
 	do := readerToDiscordOut(t, mockClientRecorder.Body)
-	EqualInt(t, 1, len(do.Embeds), "Discord message embed length")
-	EqualInt(t, 10038562, do.Embeds[0].Color, "Discord message embed color")
-	Contains(t, "a_common_annotation_summary", do.Content, "Discord message content")
+	assert.Equal(t, 1, len(do.Embeds), "Discord message embed length")
+	assert.Equal(t, 10038562, do.Embeds[0].Color, "Discord message embed color")
+	assert.Contains(t, do.Content, "a_common_annotation_summary", "Discord message content")
 }
 
 func Test_TransformAndForward_InvalidInput_NoValue_ReturnsErrorResponseCode(t *testing.T) {
@@ -59,9 +61,9 @@ func Test_TransformAndForward_InvalidInput_NoValue_ReturnsErrorResponseCode(t *t
 	res := w.Result()
 	defer res.Body.Close()
 
-	EqualInt(t, http.StatusBadRequest, res.StatusCode, "Should expect an http response status code indicating request was bad.")
+	assert.Equal(t, http.StatusBadRequest, res.StatusCode, "Should expect an http response status code indicating request was bad.")
 
-	IsFalse(t, mockClientRecorder.ClientTriggered, "should not have sent a request to Discord")
+	assert.False(t, mockClientRecorder.ClientTriggered, "should not have sent a request to Discord")
 }
 
 func Test_TransformAndForward_InvalidInput_LongString_ReturnsErrorResponseCode(t *testing.T) {
@@ -79,9 +81,9 @@ func Test_TransformAndForward_InvalidInput_LongString_ReturnsErrorResponseCode(t
 	res := w.Result()
 	defer res.Body.Close()
 
-	EqualInt(t, http.StatusBadRequest, res.StatusCode, "Should expect an http response status code indicating request was bad.")
+	assert.Equal(t, http.StatusBadRequest, res.StatusCode, "Should expect an http response status code indicating request was bad.")
 
-	IsFalse(t, mockClientRecorder.ClientTriggered, "should not have sent a request to Discord")
+	assert.False(t, mockClientRecorder.ClientTriggered, "should not have sent a request to Discord")
 }
 
 func Test_TransformAndForward_InvalidInput_PrometheusAlert_ReturnsErrorResponseCode(t *testing.T) {
@@ -91,7 +93,7 @@ func Test_TransformAndForward_InvalidInput_PrometheusAlert_ReturnsErrorResponseC
 		},
 	}
 	promAlertJson, err := json.Marshal(promAlert)
-	NoError(t, err, "marshalling prometheus alert")
+	assert.NoError(t, err, "marshalling prometheus alert")
 	req := httptest.NewRequest(http.MethodPost, "/", bytes.NewReader(promAlertJson))
 	req.Host = "testing.localhost"
 
@@ -106,9 +108,9 @@ func Test_TransformAndForward_InvalidInput_PrometheusAlert_ReturnsErrorResponseC
 	res := w.Result()
 	defer res.Body.Close()
 
-	EqualInt(t, http.StatusInternalServerError, res.StatusCode, "Should expect an http response status code indicating server internal error.")
+	assert.Equal(t, http.StatusInternalServerError, res.StatusCode, "Should expect an http response status code indicating server internal error.")
 
-	IsTrue(t, mockClientRecorder.ClientTriggered, "should have sent a request to Discord (with a message stating there is a problem)")
+	assert.True(t, mockClientRecorder.ClientTriggered, "should have sent a request to Discord (with a message stating there is a problem)")
 	// TODO test message content sent to Discord
 }
 
@@ -119,7 +121,7 @@ func Test_TransformAndForward_PrometheusAlert_And_DiscordClientResponsdsWithErro
 		},
 	}
 	promAlertJson, err := json.Marshal(promAlert)
-	NoError(t, err, "marshalling prometheus alert")
+	assert.NoError(t, err, "marshalling prometheus alert")
 	req := httptest.NewRequest(http.MethodPost, "/", bytes.NewReader(promAlertJson))
 	req.Host = "testing.localhost"
 
@@ -134,9 +136,9 @@ func Test_TransformAndForward_PrometheusAlert_And_DiscordClientResponsdsWithErro
 	res := w.Result()
 	defer res.Body.Close()
 
-	EqualInt(t, http.StatusInternalServerError, res.StatusCode, "Should expect an http response status code indicating request was unprocessable.")
+	assert.Equal(t, http.StatusInternalServerError, res.StatusCode, "Should expect an http response status code indicating request was unprocessable.")
 
-	IsTrue(t, mockClientRecorder.ClientTriggered, "should have sent a request to Discord (with a message stating there is a problem)")
+	assert.True(t, mockClientRecorder.ClientTriggered, "should have sent a request to Discord (with a message stating there is a problem)")
 	// TODO test message content sent to Discord
 }
 
@@ -147,7 +149,7 @@ func Test_TransformAndForward_PrometheusAlert_And_DiscordClientResponsdsWithErro
 		},
 	}
 	promAlertJson, err := json.Marshal(promAlert)
-	NoError(t, err, "marshalling prometheus alert")
+	assert.NoError(t, err, "marshalling prometheus alert")
 	req := httptest.NewRequest(http.MethodPost, "/", bytes.NewReader(promAlertJson))
 	req.Host = "testing.localhost"
 
@@ -162,9 +164,9 @@ func Test_TransformAndForward_PrometheusAlert_And_DiscordClientResponsdsWithErro
 	res := w.Result()
 	defer res.Body.Close()
 
-	EqualInt(t, http.StatusInternalServerError, res.StatusCode, "Should expect an http response status code indicating internal server error.")
+	assert.Equal(t, http.StatusInternalServerError, res.StatusCode, "Should expect an http response status code indicating internal server error.")
 
-	IsTrue(t, mockClientRecorder.ClientTriggered, "should have sent a request to Discord (with a message stating there is a problem)")
+	assert.True(t, mockClientRecorder.ClientTriggered, "should have sent a request to Discord (with a message stating there is a problem)")
 	// TODO test message content sent to Discord
 }
 
@@ -174,9 +176,9 @@ func Test_TransformAndForward_NoAlerts_DoesNotSendToDiscord(t *testing.T) {
 	mockClientRecorder, res := triggerAndRecordRequest(t, ao, http.StatusBadRequest, nil)
 	defer res.Body.Close()
 
-	EqualInt(t, http.StatusOK, res.StatusCode, "http response status code")
+	assert.Equal(t, http.StatusOK, res.StatusCode, "http response status code")
 
-	IsFalse(t, mockClientRecorder.ClientTriggered, "mock client should not be triggered")
+	assert.False(t, mockClientRecorder.ClientTriggered, "mock client should not be triggered")
 }
 
 func Test_TransformAndForward_NoCommonAnnotationSummary_HappyPath(t *testing.T) {
@@ -191,15 +193,15 @@ func Test_TransformAndForward_NoCommonAnnotationSummary_HappyPath(t *testing.T) 
 	mockClientRecorder, res := triggerAndRecordRequest(t, ao, http.StatusOK, nil)
 	defer res.Body.Close()
 
-	EqualInt(t, http.StatusOK, res.StatusCode, "http response status code")
+	assert.Equal(t, http.StatusOK, res.StatusCode, "http response status code")
 
-	IsTrue(t, mockClientRecorder.ClientTriggered, "mock client should be triggered")
-	EqualStr(t, "application/json", mockClientRecorder.ContentType, "content type")
+	assert.True(t, mockClientRecorder.ClientTriggered, "mock client should be triggered")
+	assert.Equal(t, "application/json", mockClientRecorder.ContentType, "content type")
 
 	do := readerToDiscordOut(t, mockClientRecorder.Body)
-	EqualInt(t, 1, len(do.Embeds), "Discord message embed length")
-	EqualInt(t, 10038562, do.Embeds[0].Color, "Discord message embed color")
-	EqualStr(t, "", do.Content, "Discord message content")
+	assert.Equal(t, 1, len(do.Embeds), "Discord message embed length")
+	assert.Equal(t, 10038562, do.Embeds[0].Color, "Discord message embed color")
+	assert.Equal(t, "", do.Content, "Discord message content")
 }
 
 func Test_TransformAndForward_StatusResolved_HappyPath(t *testing.T) {
@@ -214,13 +216,13 @@ func Test_TransformAndForward_StatusResolved_HappyPath(t *testing.T) {
 	mockClientRecorder, res := triggerAndRecordRequest(t, ao, http.StatusOK, nil)
 	defer res.Body.Close()
 
-	EqualInt(t, http.StatusOK, res.StatusCode, "http response status code")
+	assert.Equal(t, http.StatusOK, res.StatusCode, "http response status code")
 
-	IsTrue(t, mockClientRecorder.ClientTriggered, "mock client should be triggered")
+	assert.True(t, mockClientRecorder.ClientTriggered, "mock client should be triggered")
 
 	do := readerToDiscordOut(t, mockClientRecorder.Body)
-	EqualInt(t, 1, len(do.Embeds), "Discord message embed length")
-	EqualInt(t, 3066993, do.Embeds[0].Color, "Discord message embed color")
+	assert.Equal(t, 1, len(do.Embeds), "Discord message embed length")
+	assert.Equal(t, 3066993, do.Embeds[0].Color, "Discord message embed color")
 }
 
 // alert with a label 'instance'='localhost' and 'exported_instance' label is set, should have the instance replaced by 'exported_instance'
@@ -240,17 +242,17 @@ func Test_TransformAndForward_ExportedInstance_HappyPath(t *testing.T) {
 	mockClientRecorder, res := triggerAndRecordRequest(t, ao, http.StatusOK, nil)
 	defer res.Body.Close()
 
-	EqualInt(t, http.StatusOK, res.StatusCode, "http response status code")
+	assert.Equal(t, http.StatusOK, res.StatusCode, "http response status code")
 
-	IsTrue(t, mockClientRecorder.ClientTriggered, "mock client should be triggered")
-	EqualStr(t, "application/json", mockClientRecorder.ContentType, "content type")
+	assert.True(t, mockClientRecorder.ClientTriggered, "mock client should be triggered")
+	assert.Equal(t, "application/json", mockClientRecorder.ContentType, "content type")
 
 	do := readerToDiscordOut(t, mockClientRecorder.Body)
-	EqualInt(t, 1, len(do.Embeds), "Discord message embed length")
-	EqualInt(t, 10038562, do.Embeds[0].Color, "Discord message embed color")
-	EqualInt(t, 1, len(do.Embeds[0].Fields), "Discord message embed fields length")
-	Contains(t, "exported_instance_value", do.Embeds[0].Fields[0].Name, "Discord message embed field Name should contain instance")
-	EqualStr(t, "", do.Content, "Discord message content")
+	assert.Equal(t, 1, len(do.Embeds), "Discord message embed length")
+	assert.Equal(t, 10038562, do.Embeds[0].Color, "Discord message embed color")
+	assert.Equal(t, 1, len(do.Embeds[0].Fields), "Discord message embed fields length")
+	assert.Contains(t, do.Embeds[0].Fields[0].Name, "exported_instance_value", "Discord message embed field Name should contain instance")
+	assert.Equal(t, "", do.Content, "Discord message content")
 }
 
 // Discord client returns an error (e.g. a closed connection, network outage or similar)
@@ -271,15 +273,15 @@ func Test_TransformAndForward_DiscordClientReturnsError(t *testing.T) {
 	mockClientRecorder, res := triggerAndRecordRequest(t, ao, http.StatusOK, fmt.Errorf("an error in the Discord client."))
 	defer res.Body.Close()
 
-	EqualInt(t, http.StatusInternalServerError, res.StatusCode, "http response status code")
+	assert.Equal(t, http.StatusInternalServerError, res.StatusCode, "http response status code")
 
-	IsTrue(t, mockClientRecorder.ClientTriggered, "Should have sent a request to Discord")
-	EqualStr(t, "application/json", mockClientRecorder.ContentType, "content type")
+	assert.True(t, mockClientRecorder.ClientTriggered, "Should have sent a request to Discord")
+	assert.Equal(t, "application/json", mockClientRecorder.ContentType, "content type")
 
 	do := readerToDiscordOut(t, mockClientRecorder.Body)
-	EqualInt(t, 1, len(do.Embeds), "Discord message embed length")
-	EqualInt(t, 10038562, do.Embeds[0].Color, "Discord message embed color")
-	Contains(t, "a_common_annotation_summary", do.Content, "Discord message content")
+	assert.Equal(t, 1, len(do.Embeds), "Discord message embed length")
+	assert.Equal(t, 10038562, do.Embeds[0].Color, "Discord message embed color")
+	assert.Contains(t, do.Content, "a_common_annotation_summary", "Discord message content")
 }
 
 func Test_TransformAndForward_DiscordReturnsWithErrorStatusCode_ReturnInternalServerErrorStatusCode(t *testing.T) {
@@ -299,10 +301,10 @@ func Test_TransformAndForward_DiscordReturnsWithErrorStatusCode_ReturnInternalSe
 	mockClientRecorder, res := triggerAndRecordRequest(t, ao, http.StatusUnauthorized, nil)
 	defer res.Body.Close()
 
-	IsTrue(t, mockClientRecorder.ClientTriggered, "Should have sent a request to Discord")
-	EqualStr(t, "application/json", mockClientRecorder.ContentType, "content type")
+	assert.True(t, mockClientRecorder.ClientTriggered, "Should have sent a request to Discord")
+	assert.Equal(t, "application/json", mockClientRecorder.ContentType, "content type")
 
-	EqualInt(t, http.StatusInternalServerError, res.StatusCode, "http response status code should be 500")
+	assert.Equal(t, http.StatusInternalServerError, res.StatusCode, "http response status code should be 500")
 }
 
 // TODO Add a test for context with multiple alerts: if some are firing and some resolved we should publish two separate messages to Discord - alerts with matching statuses should be grouped together
@@ -311,7 +313,7 @@ func Test_TransformAndForward_DiscordReturnsWithErrorStatusCode_ReturnInternalSe
 
 func triggerAndRecordRequest(t *testing.T, request alertmanager.Out, discordStatusCode int, discordClientError error) (mockClientRecorder MockClientRecorder, httpResponse *http.Response) {
 	aoJson, err := json.Marshal(request)
-	NoError(t, err, "marshalling alertmanager out")
+	assert.NoError(t, err, "marshalling alertmanager out")
 
 	req := httptest.NewRequest(http.MethodPost, "/", bytes.NewReader(aoJson))
 	req.Host = "testing.localhost"

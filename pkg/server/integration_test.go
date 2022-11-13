@@ -10,7 +10,8 @@ import (
 	"time"
 
 	"github.com/specklesystems/alertmanager-discord/pkg/alertmanager"
-	. "github.com/specklesystems/alertmanager-discord/test"
+
+	"github.com/stretchr/testify/assert"
 )
 
 const (
@@ -29,25 +30,25 @@ func Test_Serve_HappyPath(t *testing.T) {
 	amds := AlertManagerDiscordServer{}
 	defer func() {
 		err := amds.Shutdown()
-		NoError(t, err, "server shutdown should not error")
+		assert.NoError(t, err, "server shutdown should not error")
 	}()
 
 	_, err := amds.ListenAndServe(mockDiscordServer.URL, serverListenAddress)
-	NoError(t, err, "server ListenAndServe should not error")
+	assert.NoError(t, err, "server ListenAndServe should not error")
 
 	client := http.Client{
 		Timeout: 500 * time.Millisecond,
 	}
 
 	res, err := client.Get(fmt.Sprintf("http://%s/liveness", serverListenAddress))
-	NotNil(t, res, "response to GET liveness should not be nil")
-	EqualInt(t, http.StatusOK, res.StatusCode, "GET liveness should return status code OK (200)")
+	assert.NotNil(t, res, "response to GET liveness should not be nil")
+	assert.Equal(t, http.StatusOK, res.StatusCode, "GET liveness should return status code OK (200)")
 	res, err = client.Get(fmt.Sprintf("http://%s/readiness", serverListenAddress))
-	NotNil(t, res, "response to GET readiness should not be nil")
-	EqualInt(t, http.StatusOK, res.StatusCode, "GET readiness should return status code OK (200)")
+	assert.NotNil(t, res, "response to GET readiness should not be nil")
+	assert.Equal(t, http.StatusOK, res.StatusCode, "GET readiness should return status code OK (200)")
 	res, err = client.Get(fmt.Sprintf("http://%s/favicon.ico", serverListenAddress))
-	NotNil(t, res, "response to GET favicon.ico should not be nil")
-	EqualInt(t, http.StatusOK, res.StatusCode, "GET favicon.ico should return status code OK (200)")
+	assert.NotNil(t, res, "response to GET favicon.ico should not be nil")
+	assert.Equal(t, http.StatusOK, res.StatusCode, "GET favicon.ico should return status code OK (200)")
 
 	// assert mock discord server received expected json
 	ao := alertmanager.Out{
@@ -64,10 +65,10 @@ func Test_Serve_HappyPath(t *testing.T) {
 	}
 
 	aoJson, err := json.Marshal(ao)
-	NoError(t, err, "marshalling alertmanager out")
+	assert.NoError(t, err, "marshalling alertmanager out")
 
 	req, err := http.NewRequest(http.MethodPost, fmt.Sprintf("http://%s/", serverListenAddress), bytes.NewReader(aoJson))
-	NoError(t, err, "creating http request")
+	assert.NoError(t, err, "creating http request")
 	req.Host = mockDiscordServer.URL
 
 	res, err = client.Do(req)
@@ -76,10 +77,10 @@ func Test_Serve_HappyPath(t *testing.T) {
 			res.Body.Close()
 		}
 	}()
-	NoError(t, err, "sending request to alertmanager-discord server.")
-	NotNil(t, res, "response to POST '/' should not be nil")
-	EqualInt(t, http.StatusOK, res.StatusCode, "sending valid alertmanager data should expect http response status code")
-	IsTrue(t, <-receivedRequest, "Mock discord server should have received response") // will wait until the request is received
+	assert.NoError(t, err, "sending request to alertmanager-discord server.")
+	assert.NotNil(t, res, "response to POST '/' should not be nil")
+	assert.Equal(t, http.StatusOK, res.StatusCode, "sending valid alertmanager data should expect http response status code")
+	assert.True(t, <-receivedRequest, "Mock discord server should have received response") // will wait until the request is received
 
 	// TODO assert log lines were generated
 }
@@ -89,11 +90,11 @@ func Test_Server_InvalidDiscordUrl(t *testing.T) {
 	amds := AlertManagerDiscordServer{}
 	defer func() {
 		err := amds.Shutdown()
-		NoError(t, err, "server shutdown should not error")
+		assert.NoError(t, err, "server shutdown should not error")
 	}()
 
 	_, err := amds.ListenAndServe("https://example.org/not/a/discord/webhook/api", "127.0.0.1:9095")
-	HasError(t, err, "server ListenAndServe should return an error for an invalid url")
+	assert.Error(t, err, "server ListenAndServe should return an error for an invalid url")
 }
 
 // // Commented out as some interaction with the Server_HappyPath test causes that to fail ~5% of runs
