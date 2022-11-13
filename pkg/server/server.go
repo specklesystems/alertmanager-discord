@@ -10,6 +10,7 @@ import (
 
 	"github.com/specklesystems/alertmanager-discord/pkg/alertforwarder"
 
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/rs/zerolog/log"
 )
 
@@ -59,6 +60,8 @@ func (amds *AlertManagerDiscordServer) ListenAndServe(webhookUrl, listenAddress 
 	mux.HandleFunc("/favicon.ico", func(w http.ResponseWriter, r *http.Request) {
 		// purposefully empty
 	})
+
+	mux.Handle("/metrics", promhttp.Handler())
 
 	amds.httpServer = &http.Server{
 		Addr:           listenAddress,

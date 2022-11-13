@@ -41,13 +41,16 @@ func Test_Serve_HappyPath(t *testing.T) {
 	}
 
 	res, err := client.Get(fmt.Sprintf("http://%s/liveness", serverListenAddress))
-	assert.NotNil(t, res, "response to GET liveness should not be nil")
+	assert.NotNil(t, res, "response to GET '/liveness' should not be nil")
 	assert.Equal(t, http.StatusOK, res.StatusCode, "GET liveness should return status code OK (200)")
 	res, err = client.Get(fmt.Sprintf("http://%s/readiness", serverListenAddress))
-	assert.NotNil(t, res, "response to GET readiness should not be nil")
+	assert.NotNil(t, res, "response to GET '/readiness' should not be nil")
 	assert.Equal(t, http.StatusOK, res.StatusCode, "GET readiness should return status code OK (200)")
 	res, err = client.Get(fmt.Sprintf("http://%s/favicon.ico", serverListenAddress))
-	assert.NotNil(t, res, "response to GET favicon.ico should not be nil")
+	assert.NotNil(t, res, "response to GET '/favicon.ico' should not be nil")
+	assert.Equal(t, http.StatusOK, res.StatusCode, "GET favicon.ico should return status code OK (200)")
+	res, err = client.Get(fmt.Sprintf("http://%s/metrics", serverListenAddress))
+	assert.NotNil(t, res, "response to GET '/metrics' should not be nil")
 	assert.Equal(t, http.StatusOK, res.StatusCode, "GET favicon.ico should return status code OK (200)")
 
 	// assert mock discord server received expected json
