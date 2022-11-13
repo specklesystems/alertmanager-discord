@@ -12,11 +12,14 @@ type MockClient struct {
 	RequestHandler mockClientRequestHandler
 }
 
+type RequestToMockClient struct {
+	Url         string
+	ContentType string
+	Body        io.Reader
+}
+
 type MockClientRecorder struct {
-	ClientTriggered bool
-	Url             string
-	ContentType     string
-	Body            io.Reader
+	Requests []RequestToMockClient
 }
 
 func (mc MockClient) Post(url, contentType string, body io.Reader) (resp *http.Response, err error) {
@@ -26,10 +29,11 @@ func (mc MockClient) Post(url, contentType string, body io.Reader) (resp *http.R
 func (mc *MockClientRecorder) NewMockClientWithResponse(statusCode int, errorHandlerShouldReturn error) MockClient {
 	return MockClient{
 		RequestHandler: func(url, contentType string, requestBody io.Reader) (resp *http.Response, err error) {
-			mc.ClientTriggered = true
-			mc.Url = url
-			mc.ContentType = contentType
-			mc.Body = requestBody
+			mc.Requests = append(mc.Requests, RequestToMockClient{
+				Url:         url,
+				ContentType: contentType,
+				Body:        requestBody,
+			})
 
 			resp = &http.Response{
 				StatusCode: statusCode,

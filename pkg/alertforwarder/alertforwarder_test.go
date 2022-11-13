@@ -37,10 +37,10 @@ func Test_TransformAndForward_HappyPath(t *testing.T) {
 
 	assert.Equal(t, http.StatusOK, res.StatusCode, "http response status code")
 
-	assert.True(t, mockClientRecorder.ClientTriggered, "Should have sent a request to Discord")
-	assert.Equal(t, "application/json", mockClientRecorder.ContentType, "content type")
+	assert.Equal(t, 1, len(mockClientRecorder.Requests), "Should have sent one request to Discord")
+	assert.Equal(t, "application/json", mockClientRecorder.Requests[0].ContentType, "content type")
 
-	do := readerToDiscordOut(t, mockClientRecorder.Body)
+	do := readerToDiscordOut(t, mockClientRecorder.Requests[0].Body)
 	assert.Equal(t, 1, len(do.Embeds), "Discord message embed length")
 	assert.Equal(t, 10038562, do.Embeds[0].Color, "Discord message embed color")
 	assert.Contains(t, do.Content, "a_common_annotation_summary", "Discord message content")
@@ -63,7 +63,7 @@ func Test_TransformAndForward_InvalidInput_NoValue_ReturnsErrorResponseCode(t *t
 
 	assert.Equal(t, http.StatusBadRequest, res.StatusCode, "Should expect an http response status code indicating request was bad.")
 
-	assert.False(t, mockClientRecorder.ClientTriggered, "should not have sent a request to Discord")
+	assert.Equal(t, 0, len(mockClientRecorder.Requests), "should not have sent a request to Discord")
 }
 
 func Test_TransformAndForward_InvalidInput_LongString_ReturnsErrorResponseCode(t *testing.T) {
@@ -83,7 +83,7 @@ func Test_TransformAndForward_InvalidInput_LongString_ReturnsErrorResponseCode(t
 
 	assert.Equal(t, http.StatusBadRequest, res.StatusCode, "Should expect an http response status code indicating request was bad.")
 
-	assert.False(t, mockClientRecorder.ClientTriggered, "should not have sent a request to Discord")
+	assert.Equal(t, 0, len(mockClientRecorder.Requests), "should not have sent a request to Discord")
 }
 
 func Test_TransformAndForward_InvalidInput_PrometheusAlert_ReturnsErrorResponseCode(t *testing.T) {
@@ -110,7 +110,7 @@ func Test_TransformAndForward_InvalidInput_PrometheusAlert_ReturnsErrorResponseC
 
 	assert.Equal(t, http.StatusInternalServerError, res.StatusCode, "Should expect an http response status code indicating server internal error.")
 
-	assert.True(t, mockClientRecorder.ClientTriggered, "should have sent a request to Discord (with a message stating there is a problem)")
+	assert.Equal(t, 1, len(mockClientRecorder.Requests), "should have sent one request to Discord (with a message stating there is a problem)")
 	// TODO test message content sent to Discord
 }
 
@@ -138,7 +138,7 @@ func Test_TransformAndForward_PrometheusAlert_And_DiscordClientResponsdsWithErro
 
 	assert.Equal(t, http.StatusInternalServerError, res.StatusCode, "Should expect an http response status code indicating request was unprocessable.")
 
-	assert.True(t, mockClientRecorder.ClientTriggered, "should have sent a request to Discord (with a message stating there is a problem)")
+	assert.Equal(t, 1, len(mockClientRecorder.Requests), "should have sent a request to Discord (with a message stating there is a problem)")
 	// TODO test message content sent to Discord
 }
 
@@ -166,7 +166,7 @@ func Test_TransformAndForward_PrometheusAlert_And_DiscordClientResponsdsWithErro
 
 	assert.Equal(t, http.StatusInternalServerError, res.StatusCode, "Should expect an http response status code indicating internal server error.")
 
-	assert.True(t, mockClientRecorder.ClientTriggered, "should have sent a request to Discord (with a message stating there is a problem)")
+	assert.Equal(t, 1, len(mockClientRecorder.Requests), "should have sent a request to Discord (with a message stating there is a problem)")
 	// TODO test message content sent to Discord
 }
 
@@ -178,7 +178,7 @@ func Test_TransformAndForward_NoAlerts_DoesNotSendToDiscord(t *testing.T) {
 
 	assert.Equal(t, http.StatusOK, res.StatusCode, "http response status code")
 
-	assert.False(t, mockClientRecorder.ClientTriggered, "mock client should not be triggered")
+	assert.Equal(t, 0, len(mockClientRecorder.Requests), "mock client should not be triggered")
 }
 
 func Test_TransformAndForward_NoCommonAnnotationSummary_HappyPath(t *testing.T) {
@@ -195,10 +195,10 @@ func Test_TransformAndForward_NoCommonAnnotationSummary_HappyPath(t *testing.T) 
 
 	assert.Equal(t, http.StatusOK, res.StatusCode, "http response status code")
 
-	assert.True(t, mockClientRecorder.ClientTriggered, "mock client should be triggered")
-	assert.Equal(t, "application/json", mockClientRecorder.ContentType, "content type")
+	assert.Equal(t, 1, len(mockClientRecorder.Requests), "mock client should be triggered")
+	assert.Equal(t, "application/json", mockClientRecorder.Requests[0].ContentType, "content type")
 
-	do := readerToDiscordOut(t, mockClientRecorder.Body)
+	do := readerToDiscordOut(t, mockClientRecorder.Requests[0].Body)
 	assert.Equal(t, 1, len(do.Embeds), "Discord message embed length")
 	assert.Equal(t, 10038562, do.Embeds[0].Color, "Discord message embed color")
 	assert.Equal(t, "", do.Content, "Discord message content")
@@ -218,9 +218,9 @@ func Test_TransformAndForward_StatusResolved_HappyPath(t *testing.T) {
 
 	assert.Equal(t, http.StatusOK, res.StatusCode, "http response status code")
 
-	assert.True(t, mockClientRecorder.ClientTriggered, "mock client should be triggered")
+	assert.Equal(t, 1, len(mockClientRecorder.Requests), "mock client should be triggered")
 
-	do := readerToDiscordOut(t, mockClientRecorder.Body)
+	do := readerToDiscordOut(t, mockClientRecorder.Requests[0].Body)
 	assert.Equal(t, 1, len(do.Embeds), "Discord message embed length")
 	assert.Equal(t, 3066993, do.Embeds[0].Color, "Discord message embed color")
 }
@@ -244,10 +244,10 @@ func Test_TransformAndForward_ExportedInstance_HappyPath(t *testing.T) {
 
 	assert.Equal(t, http.StatusOK, res.StatusCode, "http response status code")
 
-	assert.True(t, mockClientRecorder.ClientTriggered, "mock client should be triggered")
-	assert.Equal(t, "application/json", mockClientRecorder.ContentType, "content type")
+	assert.Equal(t, 1, len(mockClientRecorder.Requests), "mock client should be triggered")
+	assert.Equal(t, "application/json", mockClientRecorder.Requests[0].ContentType, "content type")
 
-	do := readerToDiscordOut(t, mockClientRecorder.Body)
+	do := readerToDiscordOut(t, mockClientRecorder.Requests[0].Body)
 	assert.Equal(t, 1, len(do.Embeds), "Discord message embed length")
 	assert.Equal(t, 10038562, do.Embeds[0].Color, "Discord message embed color")
 	assert.Equal(t, 1, len(do.Embeds[0].Fields), "Discord message embed fields length")
@@ -275,10 +275,10 @@ func Test_TransformAndForward_DiscordClientReturnsError(t *testing.T) {
 
 	assert.Equal(t, http.StatusInternalServerError, res.StatusCode, "http response status code")
 
-	assert.True(t, mockClientRecorder.ClientTriggered, "Should have sent a request to Discord")
-	assert.Equal(t, "application/json", mockClientRecorder.ContentType, "content type")
+	assert.Equal(t, 1, len(mockClientRecorder.Requests), "Should have sent a request to Discord")
+	assert.Equal(t, "application/json", mockClientRecorder.Requests[0].ContentType, "content type")
 
-	do := readerToDiscordOut(t, mockClientRecorder.Body)
+	do := readerToDiscordOut(t, mockClientRecorder.Requests[0].Body)
 	assert.Equal(t, 1, len(do.Embeds), "Discord message embed length")
 	assert.Equal(t, 10038562, do.Embeds[0].Color, "Discord message embed color")
 	assert.Contains(t, do.Content, "a_common_annotation_summary", "Discord message content")
@@ -301,8 +301,8 @@ func Test_TransformAndForward_DiscordReturnsWithErrorStatusCode_ReturnInternalSe
 	mockClientRecorder, res := triggerAndRecordRequest(t, ao, http.StatusUnauthorized, nil)
 	defer res.Body.Close()
 
-	assert.True(t, mockClientRecorder.ClientTriggered, "Should have sent a request to Discord")
-	assert.Equal(t, "application/json", mockClientRecorder.ContentType, "content type")
+	assert.Equal(t, 1, len(mockClientRecorder.Requests), "Should have sent a request to Discord")
+	assert.Equal(t, "application/json", mockClientRecorder.Requests[0].ContentType, "content type")
 
 	assert.Equal(t, http.StatusInternalServerError, res.StatusCode, "http response status code should be 500")
 }
