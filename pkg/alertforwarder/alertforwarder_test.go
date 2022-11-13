@@ -308,6 +308,28 @@ func Test_TransformAndForward_DiscordReturnsWithErrorStatusCode_ReturnInternalSe
 }
 
 // TODO Add a test for context with multiple alerts: if some are firing and some resolved we should publish two separate messages to Discord - alerts with matching statuses should be grouped together
+func Test_TransformAndForward_MultipleAlerts_DifferentStatus_HappyPath(t *testing.T) {
+	ao := alertmanager.Out{
+		Alerts: []alertmanager.Alert{
+			{
+				Status: alertmanager.StatusFiring,
+			},
+			{
+				Status: alertmanager.StatusFiring,
+			},
+			{
+				Status: alertmanager.StatusResolved,
+			},
+		},
+	}
+
+	mockClientRecorder, res := triggerAndRecordRequest(t, ao, http.StatusOK, nil)
+	defer res.Body.Close()
+
+	assert.Equal(t, http.StatusOK, res.StatusCode, "http response status code")
+
+	assert.Equal(t, 2, len(mockClientRecorder.Requests), "Should have sent two requests to Discord")
+}
 
 // HELPERS
 
