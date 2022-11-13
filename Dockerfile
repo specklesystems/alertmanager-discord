@@ -10,8 +10,10 @@ RUN apk update && apk add --no-cache \
 RUN adduser -D -g '' appuser
 COPY . $GOPATH/src/alertmanager-discord/
 WORKDIR $GOPATH/src/alertmanager-discord/
+ARG APPLICATION_VERSION
+ENV APPLICATION_VERSION="${APPLICATION_VERSION:-"0.0.0"}"
 #get dependancies
-RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -ldflags="-w -s" -o /go/bin/alertmanager-discord ./cmd/alertforward
+RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -ldflags="-w -s -X 'github.com/specklesystems/alertmanager-discord/pkg/version.Version=${APPLICATION_VERSION}'" -o /go/bin/alertmanager-discord main.go
 
 
 # STEP 2 build a small image

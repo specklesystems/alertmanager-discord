@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/specklesystems/alertmanager-discord/pkg/server"
+	"github.com/specklesystems/alertmanager-discord/pkg/version"
 
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
@@ -42,8 +43,9 @@ func init() {
 }
 
 var rootCmd = &cobra.Command{
-	Use:   "alertmanager-discord",
-	Short: "Forwards AlertManager alerts to Discord.",
+	Use:     "alertmanager-discord",
+	Version: version.Version,
+	Short:   "Forwards AlertManager alerts to Discord.",
 	Long: `A simple web server that accepts AlertManager webhooks,
 translates the data to match Discord's message specifications,
 and forwards that to Discord's message API endpoint.`,
