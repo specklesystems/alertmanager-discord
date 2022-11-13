@@ -5,11 +5,14 @@ import (
 	"net"
 	"net/url"
 	"regexp"
+	"strings"
+
+	"github.com/specklesystems/alertmanager-discord/pkg/flags"
 )
 
 func CheckWebhookURL(webhookURL string) (bool, *url.URL, error) {
 	if webhookURL == "" {
-		return false, &url.URL{}, fmt.Errorf("Environment variable 'DISCORD_WEBHOOK' or CLI parameter 'webhook.url' not found.")
+		return false, &url.URL{}, fmt.Errorf("'%s' has not been set. This can be provided via configuration file, command line, or environment variable ('%s')", flags.DiscordWebhookUrlFlagKey, strings.ToUpper(flags.DiscordWebhookUrlFlagKey))
 	}
 
 	parsedUrl, err := url.Parse(webhookURL)

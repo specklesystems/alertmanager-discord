@@ -2,8 +2,10 @@ package cmd
 
 import (
 	"os"
+	"strings"
 	"time"
 
+	. "github.com/specklesystems/alertmanager-discord/pkg/flags"
 	"github.com/specklesystems/alertmanager-discord/pkg/server"
 	"github.com/specklesystems/alertmanager-discord/pkg/version"
 
@@ -14,32 +16,37 @@ import (
 )
 
 const (
-	discordWebhookUrlFlagKey       = "discord.webhook.url"
-	discordWebhookUrlEnvVarKey     = "DISCORD_WEBHOOK_URL"
-	listenAddressFlagKey           = "listen.address"
-	listenAddressEnvVarKey         = "LISTEN_ADDRESS"
-	maxBackoffTimeSecondsFlagKey   = "max.backoff.time.seconds"
-	maxBackoffTimeSecondsEnvVarKey = "MAX_BACKOFF_TIME_SECONDS"
+	defaultConfigurationPath     = "/etc/alertmanager-discord/config.yaml"
+	defaultMaxBackoffTimeSeconds = 10
 )
 
 var (
+	configurationFilePath     string
 	webhookURL                string
 	listenAddress             string
 	maximumBackoffTimeSeconds int
 )
 
 func init() {
-	rootCmd.Flags().StringVarP(&webhookURL, discordWebhookUrlFlagKey, "d", "", "Url to the Discord webhook API endpoint.")
-	viper.BindPFlag(discordWebhookUrlFlagKey, rootCmd.Flags().Lookup(discordWebhookUrlFlagKey))
-	viper.BindEnv(discordWebhookUrlFlagKey, discordWebhookUrlEnvVarKey)
+	viper.SetDefault(ConfigurationPathFlagKey, defaultConfigurationPath)
 
-	rootCmd.Flags().StringVarP(&listenAddress, listenAddressFlagKey, "l", server.DefaultListenAddress, "The address (host:port) which the server will attempt to bind to and listen on.")
-	viper.BindPFlag(listenAddressFlagKey, rootCmd.Flags().Lookup(listenAddressFlagKey))
-	viper.BindEnv(listenAddressFlagKey, listenAddressEnvVarKey)
+	viper.BindEnv(ConfigurationPathFlagKey, strings.ToUpper(ConfigurationPathFlagKey))
+	rootCmd.Flags().StringVarP(&configurationFilePath, ConfigurationPathFlagKey, "c", defaultConfigurationPath, "Path to the configuration file.")
+	viper.BindPFlag(ConfigurationPathFlagKey, rootCmd.Flags().Lookup(ConfigurationPathFlagKey))
 
-	rootCmd.Flags().IntVarP(&maximumBackoffTimeSeconds, maxBackoffTimeSecondsFlagKey, "", 10, "The maximum elapsed duration (expressed as an integer number of seconds) to allow the Discord client to continue retrying to send messages to the Discord API.")
-	viper.BindPFlag(maxBackoffTimeSecondsFlagKey, rootCmd.Flags().Lookup(maxBackoffTimeSecondsFlagKey))
-	viper.BindEnv(maxBackoffTimeSecondsFlagKey, maxBackoffTimeSecondsEnvVarKey)
+	viper.BindEnv(DiscordWebhookUrlFlagKey, strings.ToUpper(DiscordWebhookUrlFlagKey))
+	rootCmd.Flags().StringVarP(&webhookURL, DiscordWebhookUrlFlagKey, "d", "", "Url to the Discord webhook API endpoint.")
+	viper.BindPFlag(DiscordWebhookUrlFlagKey, rootCmd.Flags().Lookup(DiscordWebhookUrlFlagKey))
+
+	viper.SetDefault(ListenAddressFlagKey, server.DefaultListenAddress)
+	viper.BindEnv(ListenAddressFlagKey, strings.ToUpper(ListenAddressFlagKey))
+	rootCmd.Flags().StringVarP(&listenAddress, ListenAddressFlagKey, "l", "", "The address (host:port) which the server will attempt to bind to and listen on.")
+	viper.BindPFlag(ListenAddressFlagKey, rootCmd.Flags().Lookup(ListenAddressFlagKey))
+
+	viper.SetDefault(MaxBackoffTimeSecondsFlagKey, defaultMaxBackoffTimeSeconds)
+	viper.BindEnv(MaxBackoffTimeSecondsFlagKey, strings.ToUpper(MaxBackoffTimeSecondsFlagKey))
+	rootCmd.Flags().IntVarP(&maximumBackoffTimeSeconds, MaxBackoffTimeSecondsFlagKey, "", defaultMaxBackoffTimeSeconds, "The maximum elapsed duration (expressed as an integer number of seconds) to allow the Discord client to continue retrying to send messages to the Discord API.")
+	viper.BindPFlag(MaxBackoffTimeSecondsFlagKey, rootCmd.Flags().Lookup(MaxBackoffTimeSecondsFlagKey))
 }
 
 var rootCmd = &cobra.Command{
@@ -51,6 +58,22 @@ translates the data to match Discord's message specifications,
 and forwards that to Discord's message API endpoint.`,
 	Run: func(cmd *cobra.Command, args []string) {
 		zerolog.TimeFieldFormat = zerolog.TimeFormatUnix
+
+		log.Debug().Msgf("Attempting to read from configuration file path: ('%s')", configurationFilePath)
+		viper.SetConfigFile(configurationFilePath)
+		if err := viper.ReadInConfig(); err != nil {
+			log.Info().Err(err).Msgf("Unable to read configuration file at path ('%s'). Attempting to parse command line arguments or environment variables, the command line argument has higher order of precedence.", configurationFilePath)
+		}
+
+		if viper.GetString(DiscordWebhookUrlFlagKey) != "" {
+			webhookURL = viper.GetString(DiscordWebhookUrlFlagKey)
+		}
+		if viper.GetString(ListenAddressFlagKey) != "" {
+			listenAddress = viper.GetString(ListenAddressFlagKey)
+		}
+		if viper.GetString(MaxBackoffTimeSecondsFlagKey) != "" {
+			maximumBackoffTimeSeconds = viper.GetInt(MaxBackoffTimeSecondsFlagKey)
+		}
 
 		amds := server.AlertManagerDiscordServer{
 			MaximumBackoffTimeSeconds: time.Duration(maximumBackoffTimeSeconds) * time.Second,
