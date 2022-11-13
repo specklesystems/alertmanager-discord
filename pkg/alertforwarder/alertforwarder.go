@@ -13,6 +13,10 @@ import (
 	"github.com/specklesystems/alertmanager-discord/pkg/prometheus"
 )
 
+const (
+	maxLogLength = 1024
+)
+
 type AlertForwarder struct {
 	client *discord.Client
 }
@@ -134,32 +138,38 @@ func (af *AlertForwarder) TransformAndForward(w http.ResponseWriter, r *http.Req
 	amo := alertmanager.Out{}
 	err = json.Unmarshal(b, &amo)
 	if err != nil {
-		if prometheus.IsAlert(b) {
-			log.Printf("Detected a Prometheus Alert, and not an AlertManager alert, has been sent within the http request. This indicates a misconfiguration. Attempting to send a message to notify the Discord channel of the misconfiguration.")
-			res, err := af.sendRawPromAlertWarn()
-			if err != nil || (res != nil && res.StatusCode < 200 || res.StatusCode > 399) {
-				statusCode := 0
-				if res != nil {
-					statusCode = res.StatusCode
-				}
-				log.Printf("Error in attempting to send a warning on Discord regarding Raw Prometheus Alerts. Status Code: '%d', Error: %s", statusCode, err)
-				w.WriteHeader(http.StatusInternalServerError)
-				return
-			}
-
-			w.WriteHeader(http.StatusUnprocessableEntity)
-			return
-		}
-
-		if len(b) > 1024 {
-			log.Printf("Failed to unpack inbound alert request - %s...", string(b[:1023]))
-		} else {
-			log.Printf("Failed to unpack inbound alert request - %s", string(b))
-		}
-
-		w.WriteHeader(http.StatusBadRequest)
+		af.handleInvalidInput(b, w)
 		return
 	}
 
 	af.sendWebhook(&amo, w)
+}
+
+func (af *AlertForwarder) handleInvalidInput(b []byte, w http.ResponseWriter) {
+	if prometheus.IsAlert(b) {
+		log.Printf("Detected a Prometheus Alert, and not an AlertManager alert, has been sent within the http request. This indicates a misconfiguration. Attempting to send a message to notify the Discord channel of the misconfiguration.")
+		res, err := af.sendRawPromAlertWarn()
+		if err != nil || (res != nil && res.StatusCode < 200 || res.StatusCode > 399) {
+			statusCode := 0
+			if res != nil {
+				statusCode = res.StatusCode
+			}
+
+			log.Printf("Error in attempting to send a warning on Discord regarding Raw Prometheus Alerts. Status Code: '%d', Error: %s", statusCode, err)
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+
+		w.WriteHeader(http.StatusUnprocessableEntity)
+		return
+	}
+
+	if len(b) > maxLogLength-3 {
+		log.Printf("Failed to unpack inbound alert request - %s...", string(b[:maxLogLength-3]))
+	} else {
+		log.Printf("Failed to unpack inbound alert request - %s", string(b))
+	}
+
+	w.WriteHeader(http.StatusBadRequest)
+	return
 }

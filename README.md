@@ -93,6 +93,22 @@ Or to build the Dockerfile on Apple Silicon (M1, M2 etc.):
 docker buildx build --platform=linux/amd64 . -t speckle/alertmanager-discord:local
 ```
 
+### Pre-commit
+
+A pre-commit configuration is provided. With [pre-commit](https://pre-commit.com/) installed, run:
+
+```shell
+pre-commit install
+```
+
+This should install hooks on git, which will cause pre-commit to run every time a git commit is created.
+
+Alternatively, to run pre-commit on the entire repository:
+
+```shell
+pre-commit run --all-files
+```
+
 ### Testing
 
 ```shell
@@ -105,6 +121,7 @@ go test ./... -v -cover -test.shuffle on
 - No external dependencies (go mod is empty).
   - There are AlertManager and Discord go libraries; we only require a couple of types so the additional complexity & size would outweight the benefit.
 - binary should be agnostic to deployment location or method.
+- synchronous; the connection to the server is kept open until the connection to Discord has responded (or errored). This allows the response code or error to be returned to the request - we can have more confidence that the message was sent, and have a better ability to quickly correlate which requests caused an error.
 
 ## Acknowledgements
 
