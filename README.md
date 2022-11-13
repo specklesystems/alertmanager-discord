@@ -34,10 +34,11 @@ alerting:                 receivers:
   - includes Cilium Network Policies which can be optionally enabled.
 - Liveness and Readiness probes, at `/liveness` and `/readiness`.
 - Unit and Integration tests, approx 90% coverage.
+- Structured Logging.
 
 ### Roadmap
 
-- Structured Logging to stdout.
+- Template Discord messages
 - Prometheus metrics at `/metrics`.
 - REST API documented with OpenAPI (Swagger) specification.
 

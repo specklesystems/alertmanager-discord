@@ -2,10 +2,12 @@ package main
 
 import (
 	"flag"
-	"log"
 	"os"
 
 	"github.com/specklesystems/alertmanager-discord/pkg/server"
+
+	"github.com/rs/zerolog"
+	"github.com/rs/zerolog/log"
 )
 
 var (
@@ -14,16 +16,18 @@ var (
 )
 
 func main() {
+	zerolog.TimeFieldFormat = zerolog.TimeFormatUnix
+
 	flag.Parse()
 	amds := server.AlertManagerDiscordServer{}
 	stopCh, err := amds.ListenAndServe(*webhookURL, *listenAddress)
 	defer func() {
 		if err = amds.Shutdown(); err != nil {
-			log.Fatalf("Error while shutting down server. %s", err)
+			log.Fatal().Err(err).Msg("Error while shutting down server.")
 		}
 	}()
 	if err != nil {
-		log.Printf("Error in AlertManager-Discord server: %s", err)
+		log.Error().Err(err).Msg("Error in AlertManager-Discord server")
 		close(stopCh)
 	}
 

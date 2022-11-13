@@ -3,13 +3,14 @@ package server
 import (
 	"context"
 	"fmt"
-	"log"
 	"net/http"
 	"os"
 	"os/signal"
 	"time"
 
 	"github.com/specklesystems/alertmanager-discord/pkg/alertforwarder"
+
+	"github.com/rs/zerolog/log"
 )
 
 const defaultListenAddress = "127.0.0.1:9094"
@@ -29,15 +30,14 @@ func (amds *AlertManagerDiscordServer) ListenAndServe(webhookUrl, listenAddress 
 
 	ok, _, err := alertforwarder.CheckWebhookURL(webhookUrl)
 	if !ok {
-		log.Printf("URL is invalid, exiting program...")
 		return stop, fmt.Errorf("url is invalid: %w", err)
 	}
 
 	if listenAddress == "" {
-		log.Printf("Listen address not provided. Using default: '%s'", defaultListenAddress)
+		log.Info().Msgf("Listen address not provided. Using default: '%s'", defaultListenAddress)
 		listenAddress = defaultListenAddress
 	}
-	log.Printf("Listening on: %s", listenAddress)
+	log.Info().Msgf("Listening on: %s", listenAddress)
 
 	discordClient := &http.Client{
 		Timeout: 5 * time.Second,
@@ -47,11 +47,11 @@ func (amds *AlertManagerDiscordServer) ListenAndServe(webhookUrl, listenAddress 
 	mux.HandleFunc("/", af.TransformAndForward)
 
 	mux.HandleFunc("/readiness", func(w http.ResponseWriter, r *http.Request) {
-		log.Print("Readiness probe encountered.")
+		log.Info().Msg("Readiness probe encountered.")
 	})
 
 	mux.HandleFunc("/liveness", func(w http.ResponseWriter, r *http.Request) {
-		log.Print("Liveness probe encountered.")
+		log.Info().Msg("Liveness probe encountered.")
 	})
 
 	mux.HandleFunc("/favicon.ico", func(w http.ResponseWriter, r *http.Request) {
@@ -82,7 +82,7 @@ func (amds *AlertManagerDiscordServer) ListenAndServe(webhookUrl, listenAddress 
 }
 
 func (amds *AlertManagerDiscordServer) Shutdown() error {
-	log.Print("Received signal to shut down server. Shutting down server...")
+	log.Info().Msg("Received signal to shut down server. Shutting down server...")
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 	if amds.httpServer == nil {
@@ -91,7 +91,6 @@ func (amds *AlertManagerDiscordServer) Shutdown() error {
 	}
 
 	if err := amds.httpServer.Shutdown(ctx); err != nil {
-		log.Printf("Error received on server shutdown: %s", err)
 		// prevent race condition if shutdown signal was sent prior to server starting, we remove server reference to prevent it starting
 		amds.httpServer = nil
 		return err
