@@ -3,7 +3,6 @@ package alertforwarder
 import (
 	"bytes"
 	"encoding/json"
-	"fmt"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -33,7 +32,7 @@ func Test_TransformAndForward_HappyPath(t *testing.T) {
 		},
 	}
 
-	mockClientRecorder, res := triggerAndRecordRequest(t, ao, http.StatusOK, nil)
+	mockClientRecorder, res := triggerAndRecordRequest(t, ao, http.StatusOK)
 	defer res.Body.Close()
 
 	assert.Equal(t, http.StatusOK, res.StatusCode, "http response status code")
@@ -52,7 +51,7 @@ func Test_TransformAndForward_InvalidInput_NoValue_ReturnsErrorResponseCode(t *t
 	req.Host = "testing.localhost"
 
 	mockClientRecorder := MockClientRecorder{}
-	mockClient := mockClientRecorder.NewMockClientWithResponse(http.StatusBadRequest, nil)
+	mockClient := mockClientRecorder.NewMockClientWithResponse(http.StatusBadRequest)
 
 	SUT := NewAlertForwarder(mockClient, "https://discordapp.com/api/webhooks/123456789123456789/abc", 100*time.Millisecond)
 
@@ -72,7 +71,7 @@ func Test_TransformAndForward_InvalidInput_LongString_ReturnsErrorResponseCode(t
 	req.Host = "testing.localhost"
 
 	mockClientRecorder := MockClientRecorder{}
-	mockClient := mockClientRecorder.NewMockClientWithResponse(http.StatusBadRequest, nil)
+	mockClient := mockClientRecorder.NewMockClientWithResponse(http.StatusBadRequest)
 
 	SUT := NewAlertForwarder(mockClient, "https://discordapp.com/api/webhooks/123456789123456789/abc", 100*time.Millisecond)
 
@@ -99,7 +98,7 @@ func Test_TransformAndForward_InvalidInput_PrometheusAlert_ReturnsErrorResponseC
 	req.Host = "testing.localhost"
 
 	mockClientRecorder := MockClientRecorder{}
-	mockClient := mockClientRecorder.NewMockClientWithResponse(http.StatusBadRequest, nil)
+	mockClient := mockClientRecorder.NewMockClientWithResponse(http.StatusBadRequest)
 
 	SUT := NewAlertForwarder(mockClient, "https://discordapp.com/api/webhooks/123456789123456789/abc", 100*time.Millisecond)
 
@@ -115,6 +114,7 @@ func Test_TransformAndForward_InvalidInput_PrometheusAlert_ReturnsErrorResponseC
 	// TODO test message content sent to Discord
 }
 
+// FIXME may not be able to simulate error in http Client?
 func Test_TransformAndForward_PrometheusAlert_And_DiscordClientResponsdsWithError_RespondsWithErrorCode(t *testing.T) {
 	promAlert := []prometheus.Alert{
 		{
@@ -127,7 +127,7 @@ func Test_TransformAndForward_PrometheusAlert_And_DiscordClientResponsdsWithErro
 	req.Host = "testing.localhost"
 
 	mockClientRecorder := MockClientRecorder{}
-	mockClient := mockClientRecorder.NewMockClientWithResponse(http.StatusBadRequest, fmt.Errorf("Discord client responds with an error."))
+	mockClient := mockClientRecorder.NewMockClientReturnsNil()
 
 	SUT := NewAlertForwarder(mockClient, "https://discordapp.com/api/webhooks/123456789123456789/abc", 100*time.Millisecond)
 
@@ -155,7 +155,7 @@ func Test_TransformAndForward_PrometheusAlert_And_DiscordClientResponsdsWithErro
 	req.Host = "testing.localhost"
 
 	mockClientRecorder := MockClientRecorder{}
-	mockClient := mockClientRecorder.NewMockClientWithResponse(http.StatusBadRequest, nil)
+	mockClient := mockClientRecorder.NewMockClientWithResponse(http.StatusBadRequest)
 
 	SUT := NewAlertForwarder(mockClient, "https://discordapp.com/api/webhooks/123456789123456789/abc", 100*time.Millisecond)
 
@@ -174,7 +174,7 @@ func Test_TransformAndForward_PrometheusAlert_And_DiscordClientResponsdsWithErro
 func Test_TransformAndForward_NoAlerts_DoesNotSendToDiscord(t *testing.T) {
 	ao := alertmanager.Out{}
 
-	mockClientRecorder, res := triggerAndRecordRequest(t, ao, http.StatusBadRequest, nil)
+	mockClientRecorder, res := triggerAndRecordRequest(t, ao, http.StatusBadRequest)
 	defer res.Body.Close()
 
 	assert.Equal(t, http.StatusOK, res.StatusCode, "http response status code")
@@ -191,7 +191,7 @@ func Test_TransformAndForward_NoCommonAnnotationSummary_HappyPath(t *testing.T) 
 		},
 	}
 
-	mockClientRecorder, res := triggerAndRecordRequest(t, ao, http.StatusOK, nil)
+	mockClientRecorder, res := triggerAndRecordRequest(t, ao, http.StatusOK)
 	defer res.Body.Close()
 
 	assert.Equal(t, http.StatusOK, res.StatusCode, "http response status code")
@@ -214,7 +214,7 @@ func Test_TransformAndForward_StatusResolved_HappyPath(t *testing.T) {
 		},
 	}
 
-	mockClientRecorder, res := triggerAndRecordRequest(t, ao, http.StatusOK, nil)
+	mockClientRecorder, res := triggerAndRecordRequest(t, ao, http.StatusOK)
 	defer res.Body.Close()
 
 	assert.Equal(t, http.StatusOK, res.StatusCode, "http response status code")
@@ -240,7 +240,7 @@ func Test_TransformAndForward_ExportedInstance_HappyPath(t *testing.T) {
 		},
 	}
 
-	mockClientRecorder, res := triggerAndRecordRequest(t, ao, http.StatusOK, nil)
+	mockClientRecorder, res := triggerAndRecordRequest(t, ao, http.StatusOK)
 	defer res.Body.Close()
 
 	assert.Equal(t, http.StatusOK, res.StatusCode, "http response status code")
@@ -256,6 +256,7 @@ func Test_TransformAndForward_ExportedInstance_HappyPath(t *testing.T) {
 	assert.Equal(t, "", do.Content, "Discord message content")
 }
 
+// FIXME may not be able to create an error in http.Client
 // Discord client returns an error (e.g. a closed connection, network outage or similar)
 func Test_TransformAndForward_DiscordClientReturnsError(t *testing.T) {
 	ao := alertmanager.Out{
@@ -271,7 +272,7 @@ func Test_TransformAndForward_DiscordClientReturnsError(t *testing.T) {
 		},
 	}
 
-	mockClientRecorder, res := triggerAndRecordRequest(t, ao, http.StatusOK, fmt.Errorf("an error in the Discord client."))
+	mockClientRecorder, res := triggerAndRecordRequest(t, ao, http.StatusBadRequest)
 	defer res.Body.Close()
 
 	assert.Equal(t, http.StatusInternalServerError, res.StatusCode, "http response status code")
@@ -299,7 +300,7 @@ func Test_TransformAndForward_DiscordReturnsWithErrorStatusCode_ReturnInternalSe
 		},
 	}
 
-	mockClientRecorder, res := triggerAndRecordRequest(t, ao, http.StatusUnauthorized, nil)
+	mockClientRecorder, res := triggerAndRecordRequest(t, ao, http.StatusUnauthorized)
 	defer res.Body.Close()
 
 	assert.Equal(t, 1, len(mockClientRecorder.Requests), "Should have sent a request to Discord")
@@ -324,7 +325,7 @@ func Test_TransformAndForward_MultipleAlerts_DifferentStatus_HappyPath(t *testin
 		},
 	}
 
-	mockClientRecorder, res := triggerAndRecordRequest(t, ao, http.StatusOK, nil)
+	mockClientRecorder, res := triggerAndRecordRequest(t, ao, http.StatusOK)
 	defer res.Body.Close()
 
 	assert.Equal(t, http.StatusOK, res.StatusCode, "http response status code")
@@ -334,7 +335,7 @@ func Test_TransformAndForward_MultipleAlerts_DifferentStatus_HappyPath(t *testin
 
 // HELPERS
 
-func triggerAndRecordRequest(t *testing.T, request alertmanager.Out, discordStatusCode int, discordClientError error) (mockClientRecorder MockClientRecorder, httpResponse *http.Response) {
+func triggerAndRecordRequest(t *testing.T, request alertmanager.Out, discordStatusCode int) (mockClientRecorder MockClientRecorder, httpResponse *http.Response) {
 	aoJson, err := json.Marshal(request)
 	assert.NoError(t, err, "marshalling alertmanager out")
 
@@ -342,7 +343,7 @@ func triggerAndRecordRequest(t *testing.T, request alertmanager.Out, discordStat
 	req.Host = "testing.localhost"
 
 	mockClientRecorder = MockClientRecorder{}
-	mockClient := mockClientRecorder.NewMockClientWithResponse(discordStatusCode, discordClientError)
+	mockClient := mockClientRecorder.NewMockClientWithResponse(discordStatusCode)
 
 	SUT := NewAlertForwarder(mockClient, "https://discordapp.com/api/webhooks/123456789123456789/abc", 100*time.Millisecond)
 

@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/specklesystems/alertmanager-discord/pkg/alertforwarder"
+	"github.com/specklesystems/alertmanager-discord/pkg/metrics"
 
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/rs/zerolog/log"
@@ -45,9 +46,18 @@ func (amds *AlertManagerDiscordServer) ListenAndServe(webhookUrl, listenAddress 
 		Timeout: 5 * time.Second,
 	}
 
-	af := alertforwarder.NewAlertForwarder(discordClient, webhookUrl, amds.MaximumBackoffTimeSeconds)
+	transformAndForwardWithInstrumentation := promhttp.InstrumentHandlerDuration(metrics.RequestsToAlertForwarderDuration,
+		promhttp.InstrumentHandlerCounter(metrics.RequestsToAlertForwarderTotal,
+			promhttp.InstrumentHandlerInFlight(metrics.RequestsToAlertForwarderInFlight,
+				alertforwarder.NewAlertForwarderHandler(discordClient,
+					webhookUrl,
+					amds.MaximumBackoffTimeSeconds,
+				),
+			),
+		),
+	)
 
-	mux.HandleFunc("/", af.TransformAndForward)
+	mux.HandleFunc("/", transformAndForwardWithInstrumentation)
 
 	mux.HandleFunc("/readiness", func(w http.ResponseWriter, r *http.Request) {
 		log.Info().Msg("Readiness probe encountered.")

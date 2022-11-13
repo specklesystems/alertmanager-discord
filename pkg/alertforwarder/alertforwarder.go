@@ -9,8 +9,10 @@ import (
 
 	"github.com/specklesystems/alertmanager-discord/pkg/alertmanager"
 	"github.com/specklesystems/alertmanager-discord/pkg/discord"
+	"github.com/specklesystems/alertmanager-discord/pkg/logging"
 	"github.com/specklesystems/alertmanager-discord/pkg/prometheus"
 
+	"github.com/google/uuid"
 	"github.com/rs/zerolog/log"
 )
 
@@ -18,19 +20,35 @@ const (
 	maxLogLength = 1024
 )
 
+type AlertForwarderHandler struct {
+	af AlertForwarder
+}
+
+func NewAlertForwarderHandler(client *http.Client, webhookURL string, maximumBackoffTimeSeconds time.Duration) *AlertForwarderHandler {
+	return &AlertForwarderHandler{
+		af: NewAlertForwarder(client, webhookURL, maximumBackoffTimeSeconds),
+	}
+}
+
+func (h *AlertForwarderHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	h.af.TransformAndForward(w, r)
+}
+
 type AlertForwarder struct {
 	client *discord.Client
 }
 
-func NewAlertForwarder(client discord.HttpClient, webhookURL string, maximumBackoffTimeSeconds time.Duration) AlertForwarder {
+func NewAlertForwarder(client *http.Client, webhookURL string, maximumBackoffTimeSeconds time.Duration) AlertForwarder {
 	return AlertForwarder{
 		client: discord.NewClient(client, webhookURL, maximumBackoffTimeSeconds),
 	}
 }
 
-func (af *AlertForwarder) sendWebhook(amo *alertmanager.Out, w http.ResponseWriter) {
+func (af *AlertForwarder) sendWebhook(correlationId string, amo *alertmanager.Out, w http.ResponseWriter) {
 	if len(amo.Alerts) < 1 {
-		log.Debug().Msg("There are no alerts within this notification. There is nothing to forward to Discord. Returning early...")
+		log.Debug().
+			Str(logging.FieldKeyCorrelationId, correlationId).
+			Msg("There are no alerts within this notification. There is nothing to forward to Discord. Returning early...")
 		w.WriteHeader(http.StatusOK)
 		return
 	}
@@ -44,13 +62,25 @@ func (af *AlertForwarder) sendWebhook(amo *alertmanager.Out, w http.ResponseWrit
 	for status, alerts := range groupedAlerts {
 		DO := TranslateAlertManagerToDiscord(status, amo, alerts)
 
+		log.Info().
+			Str(logging.FieldKeyEventType, logging.EventTypeRequestSending).
+			Str(logging.FieldKeyCorrelationId, correlationId).
+			Msg("Sending HTTP request to Discord.")
 		res, err := af.client.PublishMessage(DO)
 		if err != nil {
 			err = fmt.Errorf("Error encountered when publishing message to discord: %w", err)
-			log.Error().Err(err)
+			log.Error().
+				Str(logging.FieldKeyCorrelationId, correlationId).
+				Err(err).
+				Msg("Error when attempting to publish message to discord.")
 			failedToPublishAtLeastOne = true
 			continue
 		}
+
+		log.Info().
+			Str(logging.FieldKeyEventType, logging.EventTypeResponseReceived).
+			Str(logging.FieldKeyCorrelationId, correlationId).
+			Msg("HTTP response received from Discord")
 
 		if res.StatusCode < 200 || res.StatusCode > 399 {
 			failedToPublishAtLeastOne = true
@@ -66,7 +96,7 @@ func (af *AlertForwarder) sendWebhook(amo *alertmanager.Out, w http.ResponseWrit
 	w.WriteHeader(http.StatusOK)
 }
 
-func (af *AlertForwarder) sendRawPromAlertWarn() (*http.Response, error) {
+func (af *AlertForwarder) sendRawPromAlertWarn(correlationId string) (*http.Response, error) {
 
 	warningMessage := `You have probably misconfigured this software.
 We detected input in Prometheus Alert format but are expecting AlertManager format.
@@ -88,24 +118,42 @@ or https://prometheus.io/docs/alerting/latest/configuration/#webhook_config`
 		},
 	}
 
+	log.Info().
+		Str(logging.FieldKeyEventType, logging.EventTypeRequestSending).
+		Str(logging.FieldKeyCorrelationId, correlationId).
+		Msg("Sending HTTP request to Discord.")
 	res, err := af.client.PublishMessage(DO)
 	if err != nil {
 		return nil, fmt.Errorf("Error encountered when publishing message to discord: %w", err)
 	}
 
+	log.Info().
+		Str(logging.FieldKeyEventType, logging.EventTypeResponseReceived).
+		Str(logging.FieldKeyCorrelationId, correlationId).
+		Msg("HTTP response received from Discord")
 	return res, nil
 }
 
 func (af *AlertForwarder) TransformAndForward(w http.ResponseWriter, r *http.Request) {
+	correlationId := uuid.New().String()
 	log.Info().
-		Str("Host", r.Host).
-		Str("Method", r.Method).
-		Str("Path", r.URL.Path).
-		Msg("Request received.")
+		Str(logging.FieldKeyHttpHost, r.Host).
+		Str(logging.FieldKeyHttpMethod, r.Method).
+		Str(logging.FieldKeyHttpPath, r.URL.Path).
+		Str(logging.FieldKeyEventType, logging.EventTypeRequestReceived).
+		Str(logging.FieldKeyCorrelationId, correlationId).
+		Msg("HTTP request received from AlertManager.")
+	defer log.Info().
+		Str(logging.FieldKeyEventType, logging.EventTypeResponseSending).
+		Str(logging.FieldKeyCorrelationId, correlationId).
+		Msg("Sending HTTP response to AlertManager.")
 
 	b, err := io.ReadAll(r.Body)
 	if err != nil {
-		log.Error().Err(err).Msg("Unable to read request body.")
+		log.Error().
+			Str(logging.FieldKeyCorrelationId, correlationId).
+			Err(err).
+			Msg("Unable to read request body.")
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
@@ -113,24 +161,30 @@ func (af *AlertForwarder) TransformAndForward(w http.ResponseWriter, r *http.Req
 	amo := alertmanager.Out{}
 	err = json.Unmarshal(b, &amo)
 	if err != nil {
-		af.handleInvalidInput(b, w)
+		af.handleInvalidInput(correlationId, b, w)
 		return
 	}
 
-	af.sendWebhook(&amo, w)
+	af.sendWebhook(correlationId, &amo, w)
 }
 
-func (af *AlertForwarder) handleInvalidInput(b []byte, w http.ResponseWriter) {
+func (af *AlertForwarder) handleInvalidInput(correlationId string, b []byte, w http.ResponseWriter) {
 	if prometheus.IsAlert(b) {
-		log.Info().Msg("Detected a Prometheus Alert, and not an AlertManager alert, has been sent within the http request. This indicates a misconfiguration. Attempting to send a message to notify the Discord channel of the misconfiguration.")
-		res, err := af.sendRawPromAlertWarn()
+		log.Info().
+			Str(logging.FieldKeyCorrelationId, correlationId).
+			Msg("Detected a Prometheus Alert, and not an AlertManager alert, has been sent within the http request. This indicates a misconfiguration. Attempting to send a message to notify the Discord channel of the misconfiguration.")
+		res, err := af.sendRawPromAlertWarn(correlationId)
 		if err != nil || (res != nil && res.StatusCode < 200 || res.StatusCode > 399) {
 			statusCode := 0
 			if res != nil {
 				statusCode = res.StatusCode
 			}
 
-			log.Error().Err(err).Int("StatusCode", statusCode).Msg("Error when attempting to send a warning message to Discord.")
+			log.Error().
+				Err(err).
+				Str(logging.FieldKeyCorrelationId, correlationId).
+				Int(logging.FieldKeyStatusCode, statusCode).
+				Msg("Error when attempting to send a warning message to Discord.")
 			w.WriteHeader(http.StatusInternalServerError)
 			return
 		}
@@ -140,9 +194,13 @@ func (af *AlertForwarder) handleInvalidInput(b []byte, w http.ResponseWriter) {
 	}
 
 	if len(b) > maxLogLength-3 {
-		log.Warn().Msgf("Failed to unpack inbound alert request - %s...", string(b[:maxLogLength-3]))
+		log.Info().
+			Str(logging.FieldKeyCorrelationId, correlationId).
+			Msgf("Failed to unpack inbound alert request - %s...", string(b[:maxLogLength-3]))
 	} else {
-		log.Warn().Msgf("Failed to unpack inbound alert request - %s", string(b))
+		log.Info().
+			Str(logging.FieldKeyCorrelationId, correlationId).
+			Msgf("Failed to unpack inbound alert request - %s", string(b))
 	}
 
 	w.WriteHeader(http.StatusBadRequest)

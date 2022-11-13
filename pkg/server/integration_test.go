@@ -86,6 +86,8 @@ func Test_Serve_HappyPath(t *testing.T) {
 	assert.True(t, <-receivedRequest, "Mock discord server should have received response") // will wait until the request is received
 
 	// TODO assert log lines were generated
+
+	// TODO assert prometheus metrics were generated
 }
 
 // Test with invalid URL, throws an error

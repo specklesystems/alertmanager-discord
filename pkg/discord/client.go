@@ -4,31 +4,42 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"io"
 	"net/http"
 	"time"
 
 	backoff "github.com/cenkalti/backoff/v4"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
 
 const (
 	DefaultMaximumBackoffElapsedTime = 10 * time.Second
 )
 
-type HttpClient interface {
-	Post(url, contentType string, body io.Reader) (resp *http.Response, err error)
-}
-
 type Client struct {
-	httpClient                HttpClient
+	httpClient                *http.Client
 	URL                       string
 	maximumBackoffElapsedTime time.Duration
 }
 
-func NewClient(client HttpClient, url string, maximumBackoffElapsedTime time.Duration) *Client {
+func NewClient(client *http.Client, url string, maximumBackoffElapsedTime time.Duration) *Client {
 	if maximumBackoffElapsedTime <= 0 {
 		maximumBackoffElapsedTime = DefaultMaximumBackoffElapsedTime
 	}
+
+	underlyingTransport := http.DefaultTransport
+	if client.Transport != nil {
+		underlyingTransport = client.Transport
+	}
+
+	// wrap instrumentation around the existing http.Client transport
+	client.Transport = promhttp.InstrumentRoundTripperInFlight(RequestsToDiscordInFlight,
+		promhttp.InstrumentRoundTripperCounter(RequestsToDiscordTotal,
+			promhttp.InstrumentRoundTripperDuration(RequestsToDiscordDuration,
+				underlyingTransport,
+			),
+		),
+	)
+
 	return &Client{
 		httpClient:                client,
 		URL:                       url,
