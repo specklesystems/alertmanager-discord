@@ -27,20 +27,18 @@ func NewAlertForwarder(client discord.HttpClient, webhookURL string) AlertForwar
 }
 
 func (af *AlertForwarder) sendWebhook(amo *alertmanager.Out, w http.ResponseWriter) {
-	groupedAlerts := make(map[string][]alertmanager.Alert)
-
 	if len(amo.Alerts) < 1 {
 		log.Printf("There are no alerts within this notification. There is nothing to forward to Discord. Returning early...")
 		w.WriteHeader(http.StatusOK)
 		return
 	}
 
+	groupedAlerts := make(map[string][]alertmanager.Alert)
 	for _, alert := range amo.Alerts {
 		groupedAlerts[alert.Status] = append(groupedAlerts[alert.Status], alert)
 	}
 
-	failedToPublishAny := false
-
+	failedToPublishAtLeastOne := false
 	for status, alerts := range groupedAlerts {
 		DO := TranslateAlertManagerToDiscord(status, amo, alerts)
 
@@ -48,17 +46,17 @@ func (af *AlertForwarder) sendWebhook(amo *alertmanager.Out, w http.ResponseWrit
 		if err != nil {
 			err = fmt.Errorf("Error encountered when publishing message to discord: %w", err)
 			log.Printf("%s", err)
-			failedToPublishAny = true
+			failedToPublishAtLeastOne = true
 			continue
 		}
 
 		if res.StatusCode < 200 || res.StatusCode > 399 {
-			failedToPublishAny = true
+			failedToPublishAtLeastOne = true
 			continue
 		}
 	}
 
-	if failedToPublishAny {
+	if failedToPublishAtLeastOne {
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}

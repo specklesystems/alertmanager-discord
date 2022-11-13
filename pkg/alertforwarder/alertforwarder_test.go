@@ -305,6 +305,8 @@ func Test_TransformAndForward_DiscordReturnsWithErrorStatusCode_ReturnInternalSe
 	EqualInt(t, http.StatusInternalServerError, res.StatusCode, "http response status code should be 500")
 }
 
+// TODO Add a test for context with multiple alerts: if some are firing and some resolved we should publish two separate messages to Discord - alerts with matching statuses should be grouped together
+
 // HELPERS
 
 func triggerAndRecordRequest(t *testing.T, request alertmanager.Out, discordStatusCode int, discordClientError error) (mockClientRecorder MockClientRecorder, httpResponse *http.Response) {
