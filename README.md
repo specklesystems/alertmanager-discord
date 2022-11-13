@@ -28,8 +28,8 @@ alerting:                 receivers:
 ## Features
 
 - REST API
-- Small, standalone binary ( less than 6 Mb)
-- Small Docker (OCI) Image (also less than 6 Mb) with minimal dependencies
+- Small, standalone binary ( less than 12 Mb)
+- Small Docker (OCI) Image (also less than 12 Mb) with minimal dependencies
 - Helm Chart for deployment to Kubernetes.
   - includes Cilium Network Policies which can be optionally enabled.
 - Liveness and Readiness probes, at `/liveness` and `/readiness`.

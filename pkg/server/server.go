@@ -15,7 +15,7 @@ import (
 	"github.com/rs/zerolog/log"
 )
 
-const defaultListenAddress = "127.0.0.1:9094"
+const DefaultListenAddress = "0.0.0.0:9094"
 const (
 	FaviconPath   = "/favicon.ico"
 	LivenessPath  = "/liveness"
@@ -37,8 +37,8 @@ func (amds *AlertManagerDiscordServer) ListenAndServe(webhookUrl, listenAddress 
 	}
 
 	if listenAddress == "" {
-		log.Info().Msgf("Listen address not provided. Using default: '%s'", defaultListenAddress)
-		listenAddress = defaultListenAddress
+		log.Info().Msgf("Listen address not provided. Using default: '%s'", DefaultListenAddress)
+		listenAddress = DefaultListenAddress
 	}
 	log.Info().Msgf("Listening on: %s", listenAddress)
 
