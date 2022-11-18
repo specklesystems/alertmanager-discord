@@ -1,17 +1,20 @@
 version: 2.1
 
+orbs:
+  helm: travelaudience/helm@0.2.13
+
 workflows:
   version: 2
   build-image:
     jobs:
       - pre-commit:
           filters:
-            tags: &filter-all-tags # run for all tags
+            tags: &filter-allow-all
               only: /.*/
 
       - docker-build:
           filters:
-            tags: *filter-all-tags
+            tags: *filter-allow-all
             branches:
               ignore:
                 - main
@@ -20,12 +23,21 @@ workflows:
           context:
             - docker-hub
           filters:
-            tags: *filter-all-tags
+            tags: *filter-allow-all
             branches:
               only:
                 - main
           requires:
             - pre-commit
+
+      - helm/package_and_push:
+          filters:
+            tags: *filter-allow-all
+            branches: *filter-allow-all
+          chart_dir_override: deploy/helm
+          chart_git_repo: "git@github.com:specklesystems/alertmanager-discord.git"
+          chart_stable_branch: gh-pages
+          context: github-write-alertmanagerdiscord-repo
 
 jobs:
   pre-commit:
