@@ -42,6 +42,9 @@ workflows:
             - github-write-alertmanagerdiscord-repo
           filters:
             tags: *filter-allow-all
+            branches:
+              only:
+                - main
           requires:
             - docker-build
             - docker-build-and-publish

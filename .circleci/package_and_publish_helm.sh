@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-set -eox pipefail
+set -eo pipefail
 
 TEMP_PACKAGE_DIR="${TEMP_PACKAGE_DIR:-"/tmp/.cr-release-packages"}"
 HELM_PACKAGE_BRANCH="${HELM_PACKAGE_BRANCH:-"gh-pages"}"
@@ -21,32 +21,37 @@ if [[ -z "${GIT_USERNAME}" ]]; then
   exit 1
 fi
 
+echo "🧹 cleaning temporary directory"
 rm -rf "${TEMP_PACKAGE_DIR}" || true
 mkdir "${TEMP_PACKAGE_DIR}"
 
 helm version -c
 
+echo "🏗️ building dependencies"
 helm dependency build deploy/helm
-echo "packaging deploy/helm with version: ${VERSION}"
+echo "🎁 packaging deploy/helm with version: ${VERSION}"
 helm package "deploy/helm" -u --version "${VERSION}" --destination "${TEMP_PACKAGE_DIR}"
 
+echo "⏬ checking out git branch '${HELM_PACKAGE_BRANCH}'"
 git config user.email "${GIT_EMAIL}"
 git config user.name "${GIT_USERNAME}"
 git fetch
 git switch "${HELM_PACKAGE_BRANCH}"
 if [ "${CIRCLE_BRANCH}" == "${HELM_STABLE_BRANCH}" ]; then
+  echo "🛻 copying packages to stable directory"
   cp -a "${TEMP_PACKAGE_DIR}" stable/
   pushd stable
   helm repo index .
   popd
 else
   cp -a "${TEMP_PACKAGE_DIR}/." incubator/
+  echo "🛻 copying packages to incubator directory"
   pushd incubator
   helm repo index .
   popd
 fi
 
-git status
-# git add .
-# git commit -m "updating helm chart to version ${VERSION}"
-# git push --set-upstream origin "${HELM_PACKAGE_BRANCH}" # FIXME remove before merging PR
+echo "⏫ adding, commiting, and pushing to git repository"
+git add .
+git commit -m "updating helm chart to version ${VERSION}"
+git push --set-upstream origin "${HELM_PACKAGE_BRANCH}"
