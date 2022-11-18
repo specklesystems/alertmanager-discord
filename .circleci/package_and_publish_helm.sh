@@ -28,9 +28,9 @@ mkdir "${TEMP_PACKAGE_DIR}"
 helm version -c
 
 echo "🏗️ building dependencies"
-helm dependency build deploy/helm
-echo "🎁 packaging deploy/helm with version: ${VERSION}"
-helm package "deploy/helm" -u --version "${VERSION}" --destination "${TEMP_PACKAGE_DIR}"
+helm dependency build "${HELM_CHART_DIR_PATH}"
+echo "🎁 packaging ${HELM_CHART_DIR_PATH} with version: ${VERSION}"
+helm package "${HELM_CHART_DIR_PATH}" --dependency-update --version "${VERSION}" --app-version "${VERSION}" --destination "${TEMP_PACKAGE_DIR}"
 
 echo "⏬ checking out git branch '${HELM_PACKAGE_BRANCH}'"
 git config user.email "${GIT_EMAIL}"
