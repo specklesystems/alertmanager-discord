@@ -37,6 +37,15 @@ workflows:
             - get-version
             - pre-commit
 
+      - helm-package-and-publish:
+          context:
+            - github-write-alertmanagerdiscord-repo
+          filters:
+            tags: *filter-allow-all
+          requires:
+            - docker-build
+            - docker-build-and-publish
+
 jobs:
   get-version:
     docker: &docker-image
@@ -102,13 +111,13 @@ jobs:
     resource_class: *docker-resource-class
     working_directory: *workingdir
     steps:
+      - checkout
       - attach_workspace:
           at: /tmp/ci/workspace
       - run:
           name: populate environment variables
           command: |
             cat workspace/env-vars >> $BASH_ENV
-      - checkout
       - setup_remote_docker: &remote-docker
           # a weird issue with yarn installing packages throwing EPERM errors
           # this fixes it
@@ -123,14 +132,30 @@ jobs:
     resource_class: *docker-resource-class
     working_directory: *workingdir
     steps:
+      - checkout
       - attach_workspace:
           at: /tmp/ci/workspace
       - run:
           name: populate environment variables
           command: |
             cat workspace/env-vars >> $BASH_ENV
-      - checkout
       - setup_remote_docker: *remote-docker
       - run:
           name: Build
           command: ./.circleci/build.sh
+
+  helm-package-and-publish:
+    docker: *docker-image
+    resource_class: *docker-resource-class
+    working_directory: *workingdir
+    steps:
+      - checkout
+      - attach_workspace:
+          at: /tmp/ci/workspace
+      - run:
+          name: populate environment variables
+          command: |
+            cat workspace/env-vars >> $BASH_ENV
+      - run:
+          name: Build and Publish
+          command: ./.circleci/package_and_publish_helm.sh
