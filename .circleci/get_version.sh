@@ -14,5 +14,8 @@ if [[ "${CIRCLE_BRANCH}" == "main" ]]; then
     exit 0
 fi
 
+# shellcheck disable=SC2034
+BRANCH_NAME_TRUNCATED="$(echo "${CIRCLE_BRANCH}" | cut -c -50 | sed 's/[^a-zA-Z0-9_.-]/_/g')" # docker has a 128 character tag limit, so ensuring the branch name will be short enough
+
 echo "${NEXT_RELEASE}-branch.${BRANCH_NAME_TRUNCATED}.${CIRCLE_BUILD_NUM}"
 exit 0
