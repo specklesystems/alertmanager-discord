@@ -14,8 +14,10 @@ if [[ "${CIRCLE_BRANCH}" == "main" ]]; then
     exit 0
 fi
 
+ # docker has a 128 character tag limit, so ensuring the branch name will be short enough
+ # helm uses semver 2, only valid characters are a-zA-Z0-9 and hyphen '-'
 # shellcheck disable=SC2034
-BRANCH_NAME_TRUNCATED="$(echo "${CIRCLE_BRANCH}" | cut -c -50 | sed 's/[^a-zA-Z0-9_.-]/_/g')" # docker has a 128 character tag limit, so ensuring the branch name will be short enough
+BRANCH_NAME_TRUNCATED="$(echo "${CIRCLE_BRANCH}" | cut -c -50 | sed 's/[^a-zA-Z0-9.-]/-/g')"
 
 echo "${NEXT_RELEASE}-branch.${BRANCH_NAME_TRUNCATED}.${CIRCLE_BUILD_NUM}"
 exit 0
