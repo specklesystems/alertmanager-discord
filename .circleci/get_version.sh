@@ -8,7 +8,7 @@ fi
 
 # shellcheck disable=SC2068,SC2046
 LAST_RELEASE="$(git describe --always --tags $(git rev-list --tags) | grep -E '^[0-9]+\.[0-9]+\.[0-9]+$' | head -n 1)"
-NEXT_RELEASE="$(echo "${LAST_RELEASE}" | awk -F. '/[0-9]+\./{$NF++;print}' OFS=.)"
+NEXT_RELEASE="$(echo "${LAST_RELEASE}" | awk -F. -v OFS=. '{$NF += 1 ; print}')"
 if [[ "${CIRCLE_BRANCH}" == "main" ]]; then
     echo "${NEXT_RELEASE}-alpha.${CIRCLE_BUILD_NUM}"
     exit 0
