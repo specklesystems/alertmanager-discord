@@ -35,12 +35,12 @@ git config user.name "${GIT_USERNAME}"
 git fetch
 git switch "${HELM_PACKAGE_BRANCH}"
 if [ "${CIRCLE_BRANCH}" == "${HELM_STABLE_BRANCH}" ]; then
-  cp "${TEMP_PACKAGE_DIR}/*" stable/
+  cp -a "${TEMP_PACKAGE_DIR}" stable/
   pushd stable
   helm repo index .
   popd
 else
-  cp "${TEMP_PACKAGE_DIR}/*" incubator/
+  cp -a "${TEMP_PACKAGE_DIR}/." incubator/
   pushd incubator
   helm repo index .
   popd
