@@ -31,13 +31,17 @@ workflows:
             - pre-commit
 
       - helm/package_and_push:
-          filters:
-            tags: *filter-allow-all
-            branches: *filter-allow-all
           chart_dir_override: deploy/helm
           chart_git_repo: "git@github.com:specklesystems/alertmanager-discord.git"
           chart_stable_branch: gh-pages
           context: github-write-alertmanagerdiscord-repo
+          filters:
+            tags: *filter-allow-all
+            branches: *filter-allow-all
+          requires:
+            - docker-build-and-publish
+            - docker-build
+            - pre-commit
 
 jobs:
   pre-commit:
