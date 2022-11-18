@@ -152,11 +152,11 @@ jobs:
     steps:
       - checkout
       - attach_workspace:
-          at: /tmp/ci/workspace
+          at: /tmp/workspace
       - run:
           name: populate environment variables
           command: |
-            cat workspace/env-vars >> $BASH_ENV
+            cat /tmp/workspace/env-vars >> $BASH_ENV
       - run:
           name: Build and Publish
           command: ./.circleci/package_and_publish_helm.sh

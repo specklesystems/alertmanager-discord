@@ -2,7 +2,7 @@
 
 set -eox pipefail
 
-TEMP_PACKAGE_DIR="${TEMP_PACKAGE_DIR:-"./.cr-release-packages"}"
+TEMP_PACKAGE_DIR="${TEMP_PACKAGE_DIR:-"/tmp/.cr-release-packages"}"
 HELM_PACKAGE_BRANCH="${HELM_PACKAGE_BRANCH:-"gh-pages"}"
 HELM_STABLE_BRANCH="${HELM_STABLE_BRANCH:-"main"}"
 HELM_CHART_DIR_PATH="${HELM_CHART_DIR_PATH:-"deploy/helm"}"
@@ -46,6 +46,7 @@ else
   popd
 fi
 
-git add .
-git commit -m "updating helm chart to version ${VERSION}"
+git status
+# git add .
+# git commit -m "updating helm chart to version ${VERSION}"
 # git push --set-upstream origin "${HELM_PACKAGE_BRANCH}" # FIXME remove before merging PR
