@@ -145,7 +145,8 @@ jobs:
           command: ./.circleci/build.sh
 
   helm-package-and-publish:
-    docker: *docker-image
+    docker:
+      - image: quay.io/helmpack/chart-testing:v3.7.1-amd64
     resource_class: *docker-resource-class
     working_directory: *workingdir
     steps:

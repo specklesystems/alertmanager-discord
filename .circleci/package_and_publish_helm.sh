@@ -48,4 +48,4 @@ fi
 
 git add .
 git commit -m "updating helm chart to version ${VERSION}"
-git push --set-upstream origin "${HELM_PACKAGE_BRANCH}"
+# git push --set-upstream origin "${HELM_PACKAGE_BRANCH}"
