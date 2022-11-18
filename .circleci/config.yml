@@ -35,6 +35,9 @@ workflows:
           chart_git_repo: "git@github.com:specklesystems/alertmanager-discord.git"
           chart_stable_branch: gh-pages
           context: github-write-alertmanagerdiscord-repo
+          # environment variables
+          # GIT_EMAIL & GIT_USERNAME
+          # are set in CircleCI project settings
           filters:
             tags: *filter-allow-all
             branches: *filter-allow-all
