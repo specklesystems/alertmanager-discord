@@ -26,9 +26,9 @@ type AlertForwarderHandler struct {
 	af AlertForwarder
 }
 
-func NewAlertForwarderHandler(client *http.Client, webhookURL string, maximumBackoffTimeSeconds time.Duration) *AlertForwarderHandler {
+func NewAlertForwarderHandler(client *http.Client, webhookURL string, maximumBackoffElapsedTime time.Duration) *AlertForwarderHandler {
 	return &AlertForwarderHandler{
-		af: NewAlertForwarder(client, webhookURL, maximumBackoffTimeSeconds),
+		af: NewAlertForwarder(client, webhookURL, maximumBackoffElapsedTime),
 	}
 }
 
@@ -40,9 +40,9 @@ type AlertForwarder struct {
 	client *discord.Client
 }
 
-func NewAlertForwarder(client *http.Client, webhookURL string, maximumBackoffTimeSeconds time.Duration) AlertForwarder {
+func NewAlertForwarder(client *http.Client, webhookURL string, maximumBackoffElapsedTime time.Duration) AlertForwarder {
 	return AlertForwarder{
-		client: discord.NewClient(client, webhookURL, maximumBackoffTimeSeconds),
+		client: discord.NewClient(client, webhookURL, maximumBackoffElapsedTime),
 	}
 }
 
@@ -216,5 +216,4 @@ func (af *AlertForwarder) handleInvalidInput(correlationId string, b []byte, w h
 	}
 
 	w.WriteHeader(http.StatusBadRequest)
-	return
 }
