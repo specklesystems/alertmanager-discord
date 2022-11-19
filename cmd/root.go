@@ -30,30 +30,18 @@ var (
 )
 
 func init() {
-	viper.SetDefault(flags.ConfigurationPathFlagKey, defaultConfigurationPath)
+	defineConfigurationVariable(&configurationFilePath, rootCmd.Flags().StringVarP, flags.ConfigurationPathFlagKey, "c", defaultConfigurationPath, "Path to the configuration file.")
+	defineConfigurationVariable(&webhookURL, rootCmd.Flags().StringVarP, flags.DiscordWebhookUrlFlagKey, "d", "", "Url to the Discord webhook API endpoint.")
+	defineConfigurationVariable(&listenAddress, rootCmd.Flags().StringVarP, flags.ListenAddressFlagKey, "l", server.DefaultListenAddress, "The address (host:port) which the server will attempt to bind to and listen on.")
+	defineConfigurationVariable(&logLevel, rootCmd.Flags().StringVarP, flags.LogLevelFlagKey, "", defaultLogLevel, "The minimum level of logging to be produced by the pod. Acceptable values, in ascending order, are 'trace', 'debug', 'info', 'warn', 'error', 'fatal', 'panic', or 'disabled'.")
+	defineConfigurationVariable(&maximumBackoffTimeSeconds, rootCmd.Flags().IntVarP, flags.MaxBackoffTimeSecondsFlagKey, "", defaultMaxBackoffTimeSeconds, "The maximum elapsed duration (expressed as an integer number of seconds) to allow the Discord client to continue retrying to send messages to the Discord API.")
+}
 
-	viper.BindEnv(flags.ConfigurationPathFlagKey, strings.ToUpper(flags.ConfigurationPathFlagKey))
-	rootCmd.Flags().StringVarP(&configurationFilePath, flags.ConfigurationPathFlagKey, "c", defaultConfigurationPath, "Path to the configuration file.")
-	viper.BindPFlag(flags.ConfigurationPathFlagKey, rootCmd.Flags().Lookup(flags.ConfigurationPathFlagKey))
-
-	viper.BindEnv(flags.DiscordWebhookUrlFlagKey, strings.ToUpper(flags.DiscordWebhookUrlFlagKey))
-	rootCmd.Flags().StringVarP(&webhookURL, flags.DiscordWebhookUrlFlagKey, "d", "", "Url to the Discord webhook API endpoint.")
-	viper.BindPFlag(flags.DiscordWebhookUrlFlagKey, rootCmd.Flags().Lookup(flags.DiscordWebhookUrlFlagKey))
-
-	viper.SetDefault(flags.ListenAddressFlagKey, server.DefaultListenAddress)
-	viper.BindEnv(flags.ListenAddressFlagKey, strings.ToUpper(flags.ListenAddressFlagKey))
-	rootCmd.Flags().StringVarP(&listenAddress, flags.ListenAddressFlagKey, "l", server.DefaultListenAddress, "The address (host:port) which the server will attempt to bind to and listen on.")
-	viper.BindPFlag(flags.ListenAddressFlagKey, rootCmd.Flags().Lookup(flags.ListenAddressFlagKey))
-
-	viper.SetDefault(flags.LogLevelFlagKey, defaultLogLevel)
-	viper.BindEnv(flags.LogLevelFlagKey, strings.ToUpper(flags.LogLevelFlagKey))
-	rootCmd.Flags().StringVarP(&logLevel, flags.LogLevelFlagKey, "", defaultLogLevel, "The minimum level of logging to be produced by the pod. Acceptable values, in ascending order, are 'trace', 'debug', 'info', 'warn', 'error', 'fatal', 'panic', or 'disabled'.")
-	viper.BindPFlag(flags.LogLevelFlagKey, rootCmd.Flags().Lookup(flags.LogLevelFlagKey))
-
-	viper.SetDefault(flags.MaxBackoffTimeSecondsFlagKey, defaultMaxBackoffTimeSeconds)
-	viper.BindEnv(flags.MaxBackoffTimeSecondsFlagKey, strings.ToUpper(flags.MaxBackoffTimeSecondsFlagKey))
-	rootCmd.Flags().IntVarP(&maximumBackoffTimeSeconds, flags.MaxBackoffTimeSecondsFlagKey, "", defaultMaxBackoffTimeSeconds, "The maximum elapsed duration (expressed as an integer number of seconds) to allow the Discord client to continue retrying to send messages to the Discord API.")
-	viper.BindPFlag(flags.MaxBackoffTimeSecondsFlagKey, rootCmd.Flags().Lookup(flags.MaxBackoffTimeSecondsFlagKey))
+func defineConfigurationVariable[K int | string](variable *K, flagParser func(*K, string, string, K, string), flagKey string, shorthand string, defaultValue K, description string) {
+	viper.SetDefault(flagKey, defaultValue)
+	viper.BindEnv(flagKey, strings.ToUpper(flagKey))
+	flagParser(variable, flagKey, shorthand, defaultValue, description)
+	viper.BindPFlag(flagKey, rootCmd.Flags().Lookup(flagKey))
 }
 
 var rootCmd = &cobra.Command{
