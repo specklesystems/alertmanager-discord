@@ -80,11 +80,11 @@ func (af *AlertForwarder) sendWebhook(correlationId string, amo *alertmanager.Ou
 			Msg("Sending HTTP request to Discord.")
 		res, err := af.client.PublishMessage(DO)
 		if err != nil {
-			err = fmt.Errorf("failed to publish message to discord: %w", err)
+			err = fmt.Errorf("failed to publish message to Discord: %w", err)
 			logger.Error().
 				Str(logging.FieldKeyCorrelationId, correlationId).
 				Err(err).
-				Msg("Error when attempting to publish message to discord.")
+				Msg("Error when attempting to publish message to Discord.")
 			failedToPublishAtLeastOne = true
 			continue
 		}
@@ -136,7 +136,7 @@ or https://prometheus.io/docs/alerting/latest/configuration/#webhook_config`
 		Msg("Sending HTTP request to Discord.")
 	res, err := af.client.PublishMessage(DO)
 	if err != nil {
-		return nil, fmt.Errorf("error encountered when publishing message to discord: %w", err)
+		return nil, fmt.Errorf("error encountered when publishing message to Discord: %w", err)
 	}
 
 	log.Info().
