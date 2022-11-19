@@ -64,7 +64,7 @@ var rootCmd = &cobra.Command{
 translates the data to match Discord's message specifications,
 and forwards that to Discord's message API endpoint.`,
 	Run: func(cmd *cobra.Command, args []string) {
-		zerolog.TimeFieldFormat = zerolog.TimeFormatUnix
+		zerolog.TimeFieldFormat = time.RFC3339
 		zerolog.SetGlobalLevel(zerolog.InfoLevel)
 
 		// these log messages are generated before the log level is set

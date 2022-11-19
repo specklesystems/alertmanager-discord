@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"os"
 	"time"
 
 	"github.com/specklesystems/alertmanager-discord/pkg/alertmanager"
@@ -13,6 +14,7 @@ import (
 	"github.com/specklesystems/alertmanager-discord/pkg/prometheus"
 
 	"github.com/google/uuid"
+	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 )
 
@@ -44,6 +46,14 @@ func NewAlertForwarder(client *http.Client, webhookURL string, maximumBackoffTim
 	}
 }
 
+func (af *AlertForwarder) groupAlerts(amo *alertmanager.Out) map[string][]alertmanager.Alert {
+	groupedAlerts := make(map[string][]alertmanager.Alert)
+	for _, alert := range amo.Alerts {
+		groupedAlerts[alert.Status] = append(groupedAlerts[alert.Status], alert)
+	}
+	return groupedAlerts
+}
+
 func (af *AlertForwarder) sendWebhook(correlationId string, amo *alertmanager.Out, w http.ResponseWriter) {
 	if len(amo.Alerts) < 1 {
 		log.Debug().
@@ -53,23 +63,25 @@ func (af *AlertForwarder) sendWebhook(correlationId string, amo *alertmanager.Ou
 		return
 	}
 
-	groupedAlerts := make(map[string][]alertmanager.Alert)
-	for _, alert := range amo.Alerts {
-		groupedAlerts[alert.Status] = append(groupedAlerts[alert.Status], alert)
+	logger := zerolog.New(os.Stderr).With().
+		Timestamp().
+		Str(logging.FieldKeyCorrelationId, correlationId).Logger()
+	if amo.GroupLabels.Alertname != "" {
+		logger = logger.With().Str(logging.FieldKeyAlertName, amo.GroupLabels.Alertname).Logger()
 	}
 
 	failedToPublishAtLeastOne := false
-	for status, alerts := range groupedAlerts {
+	for status, alerts := range af.groupAlerts(amo) {
 		DO := TranslateAlertManagerToDiscord(status, amo, alerts)
 
-		log.Info().
+		logger.Info().
 			Str(logging.FieldKeyEventType, logging.EventTypeRequestSending).
 			Str(logging.FieldKeyCorrelationId, correlationId).
 			Msg("Sending HTTP request to Discord.")
 		res, err := af.client.PublishMessage(DO)
 		if err != nil {
-			err = fmt.Errorf("Error encountered when publishing message to discord: %w", err)
-			log.Error().
+			err = fmt.Errorf("failed to publish message to discord: %w", err)
+			logger.Error().
 				Str(logging.FieldKeyCorrelationId, correlationId).
 				Err(err).
 				Msg("Error when attempting to publish message to discord.")
@@ -77,7 +89,7 @@ func (af *AlertForwarder) sendWebhook(correlationId string, amo *alertmanager.Ou
 			continue
 		}
 
-		log.Info().
+		logger.Info().
 			Str(logging.FieldKeyEventType, logging.EventTypeResponseReceived).
 			Str(logging.FieldKeyCorrelationId, correlationId).
 			Msg("HTTP response received from Discord")
@@ -124,7 +136,7 @@ or https://prometheus.io/docs/alerting/latest/configuration/#webhook_config`
 		Msg("Sending HTTP request to Discord.")
 	res, err := af.client.PublishMessage(DO)
 	if err != nil {
-		return nil, fmt.Errorf("Error encountered when publishing message to discord: %w", err)
+		return nil, fmt.Errorf("error encountered when publishing message to discord: %w", err)
 	}
 
 	log.Info().
