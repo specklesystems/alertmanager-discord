@@ -66,7 +66,9 @@ func (af *AlertForwarder) sendWebhook(correlationId string, amo *alertmanager.Ou
 	logger := zerolog.New(os.Stderr).With().
 		Timestamp().
 		Str(logging.FieldKeyCorrelationId, correlationId).Logger()
-	if amo.GroupLabels.Alertname != "" {
+	if amo.CommonLabels.Alertname != "" {
+		logger = logger.With().Str(logging.FieldKeyAlertName, amo.CommonLabels.Alertname).Logger()
+	} else if amo.GroupLabels.Alertname != "" {
 		logger = logger.With().Str(logging.FieldKeyAlertName, amo.GroupLabels.Alertname).Logger()
 	}
 
