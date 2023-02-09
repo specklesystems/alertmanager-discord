@@ -1,0 +1,6 @@
+repositoryID: 970959ac-e2fa-44a7-955d-4fabe93fa253
+owners:
+  - name: SpeckleDevops
+ignore:
+  - name: alertmanager-discord
+    version: .*alpha.*
