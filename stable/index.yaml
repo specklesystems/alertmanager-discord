@@ -2,8 +2,18 @@ apiVersion: v1
 entries:
   alertmanager-discord:
   - apiVersion: v2
+    appVersion: 0.2.4-alpha.204
+    created: "2023-03-16T18:46:00.528351105Z"
+    description: A Helm chart to deploy alertmanager-discord to Kubernetes
+    digest: ec677263b8ec6e57c59141b109332a2658147b77205778f1616f030e84a7b5bd
+    name: alertmanager-discord
+    type: application
+    urls:
+    - alertmanager-discord-0.2.4-alpha.204.tgz
+    version: 0.2.4-alpha.204
+  - apiVersion: v2
     appVersion: 0.2.4-alpha.195
-    created: "2023-02-07T08:53:11.350553138Z"
+    created: "2023-03-16T18:46:00.527564706Z"
     description: A Helm chart to deploy alertmanager-discord to Kubernetes
     digest: bdb002e7a2c01319edfe799b0cb451d8b6b4b302feb7e2fcabc8af7bf60ae22a
     name: alertmanager-discord
@@ -13,7 +23,7 @@ entries:
     version: 0.2.4-alpha.195
   - apiVersion: v2
     appVersion: 0.2.4-alpha.184
-    created: "2023-02-07T08:53:11.350086276Z"
+    created: "2023-03-16T18:46:00.526759894Z"
     description: A Helm chart to deploy alertmanager-discord to Kubernetes
     digest: e70856450013f1b20982852d7e4bfed64640e65ea54cfd6f51d09f05f55c68e3
     name: alertmanager-discord
@@ -23,7 +33,7 @@ entries:
     version: 0.2.4-alpha.184
   - apiVersion: v2
     appVersion: 0.2.3
-    created: "2023-02-07T08:53:11.349540909Z"
+    created: "2023-03-16T18:46:00.525939076Z"
     description: A Helm chart to deploy alertmanager-discord to Kubernetes
     digest: e9f0615fff3299f25a364d81cbbbde1d071ed02a3e106a80529c54a7eff78486
     name: alertmanager-discord
@@ -33,7 +43,7 @@ entries:
     version: 0.2.3
   - apiVersion: v2
     appVersion: 0.2.3-alpha.162
-    created: "2023-02-07T08:53:11.34905348Z"
+    created: "2023-03-16T18:46:00.525194616Z"
     description: A Helm chart to deploy alertmanager-discord to Kubernetes
     digest: 05d1b1bb438c53cfef25ab455f0b8936a61f367f44802926c7c906a34d77832f
     name: alertmanager-discord
@@ -41,4 +51,4 @@ entries:
     urls:
     - alertmanager-discord-0.2.3-alpha.162.tgz
     version: 0.2.3-alpha.162
-generated: "2023-02-07T08:53:11.348332255Z"
+generated: "2023-03-16T18:46:00.52343056Z"
