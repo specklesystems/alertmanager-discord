@@ -4,7 +4,7 @@
 FROM golang:alpine as builder
 # Install SSL ca certificates
 RUN apk update && apk add --no-cache \
-  git=2.40.1-r0 \
+  git=2.43.0-r0 \
   ca-certificates=20230506-r0
 # Create appuser
 RUN adduser -D -g '' appuser
