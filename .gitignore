@@ -5,3 +5,6 @@ cover.out
 
 # CircleCI orb Helm package & push
 .cr-release-packages
+
+# pre-commit
+node_modules
