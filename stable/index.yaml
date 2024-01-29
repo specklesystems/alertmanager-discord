@@ -2,8 +2,18 @@ apiVersion: v1
 entries:
   alertmanager-discord:
   - apiVersion: v2
+    appVersion: 0.2.6
+    created: "2024-01-29T12:01:39.840487828Z"
+    description: A Helm chart to deploy alertmanager-discord to Kubernetes
+    digest: be8a9501623295ef3aae817e08d4030c3aa732b8132b2d516135a3c54ee66447
+    name: alertmanager-discord
+    type: application
+    urls:
+    - alertmanager-discord-0.2.6.tgz
+    version: 0.2.6
+  - apiVersion: v2
     appVersion: 0.2.6-alpha.256
-    created: "2024-01-29T12:00:40.009417412Z"
+    created: "2024-01-29T12:01:39.838915875Z"
     description: A Helm chart to deploy alertmanager-discord to Kubernetes
     digest: 6dba71521444d9015c70e9f587f21f0a65ecffedeac6f5d5db608d9bd0aacf45
     name: alertmanager-discord
@@ -13,7 +23,7 @@ entries:
     version: 0.2.6-alpha.256
   - apiVersion: v2
     appVersion: 0.2.5
-    created: "2024-01-29T12:00:40.008884146Z"
+    created: "2024-01-29T12:01:39.83833227Z"
     description: A Helm chart to deploy alertmanager-discord to Kubernetes
     digest: f08ceb39fafb9c88c547db67877bc93db73cf7179fcdd9f90b7a2d249e979c50
     name: alertmanager-discord
@@ -23,7 +33,7 @@ entries:
     version: 0.2.5
   - apiVersion: v2
     appVersion: 0.2.5-alpha.241
-    created: "2024-01-29T12:00:40.008351764Z"
+    created: "2024-01-29T12:01:39.837809385Z"
     description: A Helm chart to deploy alertmanager-discord to Kubernetes
     digest: bae9ba18ee9132d76826c75c8e37168d01122508df75281febb2dd446e3b24b1
     name: alertmanager-discord
@@ -33,7 +43,7 @@ entries:
     version: 0.2.5-alpha.241
   - apiVersion: v2
     appVersion: 0.2.5-alpha.224
-    created: "2024-01-29T12:00:40.007217178Z"
+    created: "2024-01-29T12:01:39.837288239Z"
     description: A Helm chart to deploy alertmanager-discord to Kubernetes
     digest: 06bbdc0cf20a19fe9c01916fca66653d839b63345c87ec9f7ce804e95ff9f342
     name: alertmanager-discord
@@ -43,7 +53,7 @@ entries:
     version: 0.2.5-alpha.224
   - apiVersion: v2
     appVersion: 0.2.4
-    created: "2024-01-29T12:00:40.006373249Z"
+    created: "2024-01-29T12:01:39.836770636Z"
     description: A Helm chart to deploy alertmanager-discord to Kubernetes
     digest: 3808bcd0b3497a706530832651609cea6790ca90c857d240b612dc1a5fdf4dbd
     name: alertmanager-discord
@@ -53,7 +63,7 @@ entries:
     version: 0.2.4
   - apiVersion: v2
     appVersion: 0.2.4-alpha.204
-    created: "2024-01-29T12:00:40.005661506Z"
+    created: "2024-01-29T12:01:39.836247507Z"
     description: A Helm chart to deploy alertmanager-discord to Kubernetes
     digest: ec677263b8ec6e57c59141b109332a2658147b77205778f1616f030e84a7b5bd
     name: alertmanager-discord
@@ -63,7 +73,7 @@ entries:
     version: 0.2.4-alpha.204
   - apiVersion: v2
     appVersion: 0.2.4-alpha.195
-    created: "2024-01-29T12:00:40.005147483Z"
+    created: "2024-01-29T12:01:39.835682836Z"
     description: A Helm chart to deploy alertmanager-discord to Kubernetes
     digest: bdb002e7a2c01319edfe799b0cb451d8b6b4b302feb7e2fcabc8af7bf60ae22a
     name: alertmanager-discord
@@ -73,7 +83,7 @@ entries:
     version: 0.2.4-alpha.195
   - apiVersion: v2
     appVersion: 0.2.4-alpha.184
-    created: "2024-01-29T12:00:40.004658168Z"
+    created: "2024-01-29T12:01:39.835201962Z"
     description: A Helm chart to deploy alertmanager-discord to Kubernetes
     digest: e70856450013f1b20982852d7e4bfed64640e65ea54cfd6f51d09f05f55c68e3
     name: alertmanager-discord
@@ -83,7 +93,7 @@ entries:
     version: 0.2.4-alpha.184
   - apiVersion: v2
     appVersion: 0.2.3
-    created: "2024-01-29T12:00:40.004107178Z"
+    created: "2024-01-29T12:01:39.834700621Z"
     description: A Helm chart to deploy alertmanager-discord to Kubernetes
     digest: e9f0615fff3299f25a364d81cbbbde1d071ed02a3e106a80529c54a7eff78486
     name: alertmanager-discord
@@ -93,7 +103,7 @@ entries:
     version: 0.2.3
   - apiVersion: v2
     appVersion: 0.2.3-alpha.162
-    created: "2024-01-29T12:00:40.003430773Z"
+    created: "2024-01-29T12:01:39.834193528Z"
     description: A Helm chart to deploy alertmanager-discord to Kubernetes
     digest: 05d1b1bb438c53cfef25ab455f0b8936a61f367f44802926c7c906a34d77832f
     name: alertmanager-discord
@@ -101,4 +111,4 @@ entries:
     urls:
     - alertmanager-discord-0.2.3-alpha.162.tgz
     version: 0.2.3-alpha.162
-generated: "2024-01-29T12:00:40.002658972Z"
+generated: "2024-01-29T12:01:39.833437091Z"
