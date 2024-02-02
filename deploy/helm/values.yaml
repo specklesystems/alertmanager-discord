@@ -24,6 +24,7 @@ podAnnotations: {}
 podSecurityContext:
   fsGroup: 2000
 
+# -- https://kubernetes.io/docs/concepts/scheduling-eviction/pod-priority-preemption/
 priorityClassName: ""
 
 securityContext:
