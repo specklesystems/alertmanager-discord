@@ -117,9 +117,7 @@ jobs:
           command: |
             cat workspace/env-vars >> $BASH_ENV
       - setup_remote_docker: &remote-docker
-          # a weird issue with yarn installing packages throwing EPERM errors
-          # this fixes it
-          version: 20.10.12
+          version: default
           docker_layer_caching: true
       - run:
           name: Build and Publish
